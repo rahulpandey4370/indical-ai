@@ -16,6 +16,7 @@ export type MacroNutrients = {
 
 export type HistoryEntry = {
   id: string;
+  userId: string;
   timestamp: string;
   analysis: NutritionalAnalysis;
   imageUrl: string;

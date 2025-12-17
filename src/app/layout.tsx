@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { FirebaseClientProvider } from '@/firebase';
+import { UserProvider } from '@/hooks/use-user';
+
 
 export const metadata: Metadata = {
   title: 'IndiCal AI',
@@ -28,10 +29,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <FirebaseClientProvider>
+        <UserProvider>
           {children}
           <Toaster />
-        </FirebaseClientProvider>
+        </UserProvider>
       </body>
     </html>
   );

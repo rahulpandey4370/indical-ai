@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useUser, useCollection } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useState, useEffect } from 'react';
+import { useUser } from '@/hooks/use-user';
 import { Header } from '@/components/layout/header';
 import DailySummary from '@/components/dashboard/daily-summary';
 import HistoryLog from '@/components/history/history-log';
@@ -19,28 +17,36 @@ import { AnalysisPanel } from '@/components/analysis/analysis-panel';
 import type { HistoryEntry } from '@/lib/types';
 import { Utensils } from 'lucide-react';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
-import { useRouter } from 'next/navigation';
+import { getHistory } from '@/lib/actions';
+
 
 export default function Home() {
   const { user, loading: userLoading } = useUser();
-  const router = useRouter();
-  const firestore = useFirestore();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<HistoryEntry | null>(
     null
   );
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
-  const historyQuery = user
-    ? query(
-        collection(firestore, 'users', user.uid, 'history'),
-        orderBy('timestamp', 'desc')
-      )
-    : null;
-
-  const { data: history, loading: historyLoading } =
-    useCollection<HistoryEntry>(historyQuery);
-
+  useEffect(() => {
+    if (user) {
+      setHistoryLoading(true);
+      getHistory(user.id)
+        .then((userHistory) => {
+          // Ensure timestamp is a string for consistent serialization
+          const formattedHistory = userHistory.map(entry => ({
+            ...entry,
+            timestamp: new Date(entry.timestamp).toISOString(),
+          }));
+          setHistory(formattedHistory);
+        })
+        .catch(console.error)
+        .finally(() => setHistoryLoading(false));
+    }
+  }, [user]);
+  
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
   };
@@ -52,8 +58,6 @@ export default function Home() {
 
   const handleSelectEntry = (entry: HistoryEntry) => {
     setSelectedEntry(entry);
-    // TODO: Implement edit functionality in AnalysisPanel
-    // For now, it just opens the panel
     setIsSheetOpen(true);
   };
 
@@ -61,13 +65,21 @@ export default function Home() {
     // TODO: Implement delete functionality
     console.log('Delete entry:', id);
   };
+  
+  const handleSheetClose = (isOpen: boolean) => {
+    setIsSheetOpen(isOpen);
+    if (!isOpen) {
+      // Refetch history when panel is closed
+      if (user) {
+        setHistoryLoading(true);
+        getHistory(user.id)
+          .then(setHistory)
+          .finally(() => setHistoryLoading(false));
+      }
+    }
+  };
 
   if (userLoading) {
-    return <LoadingSpinner />;
-  }
-
-  if (!user) {
-    router.push('/login');
     return <LoadingSpinner />;
   }
 
@@ -114,7 +126,7 @@ export default function Home() {
 
         <ActionToolbar onAddMeal={handleAddMeal} />
 
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <Sheet open={isSheetOpen} onOpenChange={handleSheetClose}>
           <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
             <SheetHeader>
               <SheetTitle className="font-headline">
@@ -135,7 +147,7 @@ export default function Home() {
             <AnalysisPanel
               key={selectedDate.toISOString() + (selectedEntry?.id || '')}
               date={selectedDate}
-              closePanel={() => setIsSheetOpen(false)}
+              closePanel={() => handleSheetClose(false)}
               existingEntry={selectedEntry}
             />
           </SheetContent>

@@ -26,7 +26,7 @@ import { NutritionalChart } from './nutritional-chart';
 import { Badge } from '../ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { useUser } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 
 const initialAnalysisState: {
   result?: NutritionalAnalysis | null;
@@ -81,9 +81,12 @@ export function AnalysisPanel({
     refinementState.result = null;
     refinementState.error = null;
     // A bit of a hack to force re-render of the form
-    (document.getElementById('image') as HTMLInputElement).value = '';
+    const imageInput = document.getElementById('image') as HTMLInputElement;
+    if (imageInput) {
+      imageInput.value = '';
+    }
   };
-
+  
   const handleCommit = () => {
     if (!user) {
       toast({
@@ -101,7 +104,7 @@ export function AnalysisPanel({
         finalAnalysis,
         imagePreview,
         date,
-        user.uid,
+        user.id,
         existingEntry?.id
       );
       if (result.success) {
