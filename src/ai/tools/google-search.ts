@@ -1,0 +1,37 @@
+
+import { z } from 'genkit';
+import { defineTool } from 'genkit';
+
+export const googleSearchTool = {
+  name: 'googleSearch',
+  description: 'Search Google for information.',
+  inputSchema: z.object({ query: z.string() }),
+  outputSchema: z.string(),
+  run: async (input: { query: string }) => {
+    console.log(`[googleSearch] searching for "${input.query}"...`);
+    const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
+    const cx = process.env.GOOGLE_SEARCH_CX;
+
+    if (!apiKey || !cx) {
+      return 'Google Search is not configured.';
+    }
+
+    const url = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(
+      input.query
+    )}`;
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      return `Google Search API returned an error: ${response.statusText}`;
+    }
+
+    const data = await response.json();
+    if (!data.items || data.items.length === 0) {
+      return 'No results found.';
+    }
+
+    // Extract snippets from the search results
+    const snippets = data.items.map((item: any) => item.snippet);
+    return JSON.stringify(snippets);
+  },
+};
