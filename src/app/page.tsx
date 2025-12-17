@@ -18,7 +18,7 @@ import { AnalysisPanel } from '@/components/analysis/analysis-panel';
 import type { HistoryEntry, UserGoals, ChatMessage } from '@/lib/types';
 import { getHistory, getGoals, saveGoals } from '@/lib/actions';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
-import { Bot, Camera, Loader2, ScanBarcode, Sparkles, Type, Upload, X } from 'lucide-react';
+import { Bot, Camera, Loader2, ScanBarcode, Sparkles, Type, Upload, X, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
