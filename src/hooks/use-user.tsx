@@ -12,7 +12,7 @@ interface User {
 const mockUser: User = {
   id: 'rahul',
   name: 'Rahul',
-  email: 'rahul@indical.ai',
+  email: 'indical@i',
 };
 
 interface UserContextValue {
@@ -36,7 +36,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const value = { user, loading };
 
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+  return (<UserContext.Provider value={value}>{children}</UserContext.Provider>);
 }
 
 export function useUser() {
