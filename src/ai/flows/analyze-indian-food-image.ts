@@ -23,15 +23,19 @@ export async function analyzeIndianFoodImage(
 
 const prompt = ai.definePrompt({
   name: 'analyzeIndianFoodImagePrompt',
-  input: {schema: AnalyzeIndianFoodImageInputSchema},
+  input: {schema: z.object({
+    photoDataUri: z.string().optional(),
+    textInput: z.string().optional(),
+    isMealMode: z.boolean().optional(),
+    isBarcodeMode: z.boolean().optional(),
+    isTextMode: z.boolean().optional(),
+  })},
   output: {schema: AnalyzeIndianFoodImageOutputSchema},
   prompt: `
-    You are an expert Indian nutritionist. Analyze the provided input based on the mode.
+    You are an expert Indian nutritionist. Analyze the provided input.
     
-    Current Mode: {{{mode}}}
-
     {{#if photoDataUri}}
-      {{#if (eval "mode === 'barcode'")}}{
+      {{#if isBarcodeMode}}{
         Analyze this image of a packaged food product.
         1. Identify the product name from the packaging.
         2. Extract nutrition information per serving from the label.
@@ -40,7 +44,7 @@ const prompt = ai.definePrompt({
         Image: {{media url=photoDataUri}}
       {{/if}}
 
-      {{#if (eval "mode === 'meal'")}}{
+      {{#if isMealMode}}{
         You are an expert Indian nutritionist. Analyze this food image.
         
         CRITICAL INSTRUCTION: You MUST break down the meal into its INDIVIDUAL separate items. 
@@ -58,16 +62,17 @@ const prompt = ai.definePrompt({
     {{/if}}
     
     {{#if textInput}}
-      Analyze this meal description: "{{{textInput}}}".
-      
-      CRITICAL: Break down the text into separate individual food items. 
-      Example: "2 rotis and an egg" -> Item 1: Roti (Quantity: 2), Item 2: Egg (Quantity: 1).
-      Calculate calories and macros for each item individually and then sum them for the totals.
-      
-      Return strictly JSON using the provided output schema. Set food_type to "prepared".
+      {{#if isTextMode}}
+        Analyze this meal description: "{{{textInput}}}".
+        
+        CRITICAL: Break down the text into separate individual food items. 
+        Example: "2 rotis and an egg" -> Item 1: Roti (Quantity: 2), Item 2: Egg (Quantity: 1).
+        Calculate calories and macros for each item individually and then sum them for the totals.
+        
+        Return strictly JSON using the provided output schema. Set food_type to "prepared".
+      {{/if}}
     {{/if}}
   `,
-  
 });
 
 const analyzeIndianFoodImageFlow = ai.defineFlow(
@@ -77,7 +82,13 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
     outputSchema: AnalyzeIndianFoodImageOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const {output} = await prompt({
+      photoDataUri: input.photoDataUri,
+      textInput: input.textInput,
+      isMealMode: input.mode === 'meal',
+      isBarcodeMode: input.mode === 'barcode',
+      isTextMode: input.mode === 'text',
+    });
     if (!output) {
       throw new Error("Analysis failed to produce an output.");
     }
