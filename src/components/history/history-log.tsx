@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
@@ -20,10 +21,8 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
 
   const handleCopy = (e: React.MouseEvent, entry: HistoryEntry) => {
     e.stopPropagation();
-    const itemsList = entry.analysis.dishes.join(', ');
-    const textToCopy = `IndiCal AI Log:\nMeal: ${itemsList}\nAnalysis: ${
-      entry.analysis.estimatedNutritionalContent
-    }\nDate: ${new Date(entry.timestamp).toLocaleString()}`;
+    const itemsList = entry.analysis.items.map(i => `${i.name} (${i.weight_g}g)`).join(', ');
+    const textToCopy = `IndiCal AI Log:\nMeal: ${itemsList}\nTotal: ${entry.analysis.total_calories} kcal\nDate: ${new Date(entry.timestamp).toLocaleString()}`;
 
     navigator.clipboard.writeText(textToCopy).then(() => {
       setCopiedId(entry.id);
@@ -37,15 +36,17 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
   };
 
   if (history.length === 0) {
-    return null;
-  }
-
-  const getCalories = (entry: HistoryEntry) => {
-    const match = entry.analysis.estimatedNutritionalContent.match(
-      /calories:\s*~?(\d+)/i
+     return (
+      <div className="flex flex-col items-center justify-center py-24 text-slate-400 dark:text-slate-600 bg-card dark:bg-slate-900 rounded-[48px] border-2 border-dashed border-border dark:border-white/5 mx-2 shadow-sm animate-in fade-in zoom-in duration-500">
+        <div className="relative mb-6">
+          <Utensils size={72} className="opacity-10 text-primary" />
+          <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full"></div>
+        </div>
+        <p className="text-2xl font-black opacity-30 tracking-tight">Empty Logbook</p>
+        <p className="text-[10px] opacity-20 font-black uppercase tracking-[0.2em] mt-2">Ready for your first scan</p>
+      </div>
     );
-    return match ? parseInt(match[1], 10) : 0;
-  };
+  }
 
   return (
     <div className="space-y-5 px-1 pb-24 pt-8">
@@ -84,11 +85,11 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
               </span>
             </div>
             <h4 className="font-black text-card-foreground truncate text-xl mb-1.5 group-hover:text-primary transition-colors tracking-tight">
-              {entry.analysis.dishes.join(', ')}
+              {entry.analysis.items.map(i => i.name).join(', ')}
             </h4>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-black text-foreground tracking-tighter">
-                {getCalories(entry)}
+                {entry.analysis.total_calories}
               </span>
               <span className="text-[10px] font-black opacity-30 uppercase tracking-widest">
                 kcal

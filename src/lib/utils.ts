@@ -1,11 +1,21 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import type { NutritionalAnalysis } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function parseNutritionString(nutritionString: string | undefined) {
+export function parseNutritionString(nutritionString: string | undefined | NutritionalAnalysis) {
+  if (typeof nutritionString === 'object' && nutritionString !== null) {
+    return {
+      calories: nutritionString.total_calories || 0,
+      protein: nutritionString.total_macros?.protein || 0,
+      carbs: nutritionString.total_macros?.carbs || 0,
+      fat: nutritionString.total_macros?.fat || 0,
+    }
+  }
+
   if (!nutritionString) {
     return { calories: 0, protein: 0, carbs: 0, fat: 0 };
   }

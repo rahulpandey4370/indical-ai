@@ -1,22 +1,13 @@
+
 'use server';
 
 import { z } from 'zod';
-import { analyzeIndianFoodImage } from '@/ai/flows/analyze-indian-food-image';
 import { refineNutritionalAnalysis } from '@/ai/flows/refine-nutritional-analysis';
-import type { NutritionalAnalysis, RefinedNutritionalAnalysis, HistoryEntry } from './types';
+import type { NutritionalAnalysis, HistoryEntry, UserGoals } from './types';
 import { CosmosClient } from '@azure/cosmos';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
 
-
-interface AnalysisState {
-  error?: string | null;
-  result?: NutritionalAnalysis | null;
-}
-
-const AnalyzeImageSchema = z.object({
-  photoDataUri: z.string().min(1, 'Image data is required.'),
-});
 
 // Azure Cosmos DB and Blob Storage Configuration
 const cosmosEndpoint = process.env.AZURE_COSMOS_DB_ENDPOINT!;
@@ -34,68 +25,6 @@ const container = database.container(cosmosContainerId);
 const blobServiceClient = BlobServiceClient.fromConnectionString(blobConnectionString);
 const containerClient = blobServiceClient.getContainerClient(blobContainerName);
 
-
-export async function analyzeImage(
-  prevState: AnalysisState,
-  formData: FormData
-): Promise<AnalysisState> {
-  const validatedFields = AnalyzeImageSchema.safeParse({
-    photoDataUri: formData.get('photoDataUri'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      error: validatedFields.error.flatten().fieldErrors.photoDataUri?.[0],
-    };
-  }
-
-  try {
-    const result = await analyzeIndianFoodImage({
-      photoDataUri: validatedFields.data.photoDataUri,
-    });
-    return { result };
-  } catch (e: any) {
-    return { error: e.message || 'An unknown error occurred during analysis.' };
-  }
-}
-
-interface RefinementState {
-  error?: string | null;
-  result?: RefinedNutritionalAnalysis | null;
-}
-
-const RefineAnalysisSchema = z.object({
-  initialAnalysis: z.string().min(1),
-  refinementInstructions: z
-    .string()
-    .min(1, 'Refinement instructions are required.'),
-});
-
-export async function refineAnalysis(
-  prevState: RefinementState,
-  formData: FormData
-): Promise<RefinementState> {
-  const validatedFields = RefineAnalysisSchema.safeParse({
-    initialAnalysis: formData.get('initialAnalysis'),
-    refinementInstructions: formData.get('refinementInstructions'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      error: 'Invalid input for refinement.',
-    };
-  }
-
-  try {
-    const result = await refineNutritionalAnalysis(validatedFields.data);
-    return { result };
-  } catch (e: any) {
-    return {
-      error: e.message || 'An unknown error occurred during refinement.',
-    };
-  }
-}
-
 async function uploadImageToBlob(imageUri: string, userId: string): Promise<string> {
     const blobName = `${userId}/${uuidv4()}.jpg`;
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
@@ -111,28 +40,23 @@ async function uploadImageToBlob(imageUri: string, userId: string): Promise<stri
 }
 
 export async function commitToJourney(
-  analysis: NutritionalAnalysis | RefinedNutritionalAnalysis,
-  imageUri: string,
+  analysis: NutritionalAnalysis,
+  imageUri: string | null,
   date: Date,
   userId: string,
   docId?: string
-) {
+): Promise<{ success: boolean; message: string }> {
   try {
-    const imageUrl = await uploadImageToBlob(imageUri, userId);
-
-    const finalAnalysis =
-      'refinedAnalysis' in analysis
-        ? {
-            dishes: ['Refined Meal'], // Placeholder as refinement might alter dishes
-            estimatedNutritionalContent: analysis.refinedAnalysis,
-            analysisNotes: 'Refined by user.',
-          }
-        : analysis;
+    let imageUrl = imageUri;
+    // Only upload if the image is a new base64 image
+    if (imageUri && imageUri.startsWith('data:image')) {
+        imageUrl = await uploadImageToBlob(imageUri, userId);
+    }
 
     const entryToSave: Omit<HistoryEntry, 'id'> & { id?: string, userId: string } = {
       userId,
-      analysis: finalAnalysis,
-      imageUrl: imageUrl,
+      analysis: analysis,
+      imageUrl: imageUrl || '',
       timestamp: date.toISOString(),
     };
 
@@ -171,4 +95,50 @@ export async function getHistory(userId: string): Promise<HistoryEntry[]> {
       console.error('Failed to fetch history from Cosmos DB', error);
       return [];
     }
+}
+
+export async function getGoals(userId: string): Promise<UserGoals | null> {
+    const blobName = `${userId}/goals.json`;
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    try {
+        const downloadBlockBlobResponse = await blockBlobClient.download(0);
+        const downloaded = await streamToBuffer(downloadBlockBlobResponse.readableStreamBody);
+        return JSON.parse(downloaded.toString());
+    } catch (error: any) {
+        if (error.statusCode === 404) {
+            return null; // Goals not set yet
+        }
+        console.error('Failed to fetch goals from Blob Storage', error);
+        return null;
+    }
+}
+
+export async function saveGoals(userId: string, goals: UserGoals): Promise<{success: boolean}> {
+    const blobName = `${userId}/goals.json`;
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+    const data = JSON.stringify(goals);
+    try {
+        await blockBlobClient.upload(data, data.length);
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to save goals to Blob Storage', error);
+        return { success: false };
+    }
+}
+
+async function streamToBuffer(readableStream: NodeJS.ReadableStream | undefined): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+        if (!readableStream) {
+            return resolve(Buffer.alloc(0));
+        }
+        const chunks: Buffer[] = [];
+        readableStream.on('data', (data: Buffer | string) => {
+            chunks.push(data instanceof Buffer ? data : Buffer.from(data));
+        });
+        readableStream.on('end', () => {
+            resolve(Buffer.concat(chunks));
+        });
+        readableStream.on('error', reject);
+    });
 }

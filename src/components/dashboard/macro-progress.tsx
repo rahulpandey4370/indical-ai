@@ -1,6 +1,5 @@
-'use client';
 
-import { Progress } from '@/components/ui/progress';
+'use client';
 
 interface MacroProgressProps {
   label: string;
@@ -16,25 +15,17 @@ export default function MacroProgress({
   const percentage = goal > 0 ? (value / goal) * 100 : 0;
 
   return (
-    <div className="flex items-center gap-4">
-      <p className="w-16 text-xs font-bold uppercase shrink-0">{label}</p>
-      <div className="flex-1">
-        <Progress
-          value={percentage}
-          className="h-2 bg-primary-foreground/20"
-          indicatorClassName="bg-primary-foreground"
-        />
-      </div>
-      <p className="text-xs font-mono w-24 text-right">
-        <span className="font-bold">{value.toFixed(0)}</span> / {goal}g
-      </p>
+    <div className="space-y-3">
+        <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-[0.15em]">
+          <span className="opacity-80">{label}</span>
+          <span>{Math.round(value)} / {goal}g</span>
+        </div>
+        <div className="h-2.5 bg-black/10 rounded-full overflow-hidden p-0.5">
+            <div 
+                className="h-full bg-white rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
+                style={{width: `${Math.min(100, percentage)}%`}} 
+            />
+        </div>
     </div>
   );
-}
-
-// Add indicatorClassName to Progress component props
-declare module 'react' {
-    interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-      indicatorClassName?: string;
-    }
 }

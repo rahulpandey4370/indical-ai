@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Analyzes an image of Indian food to identify dishes and estimate nutritional content.
@@ -9,27 +10,9 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { AnalyzeIndianFoodImageOutputSchema, AnalyzeIndianFoodImageInputSchema } from '@/lib/schemas';
 
-const AnalyzeIndianFoodImageInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of an Indian meal, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-  analysisRefinementInstructions: z
-    .string()
-    .optional()
-    .describe("Optional instructions to refine the AI's analysis, specified in natural language."),
-});
 export type AnalyzeIndianFoodImageInput = z.infer<typeof AnalyzeIndianFoodImageInputSchema>;
-
-const AnalyzeIndianFoodImageOutputSchema = z.object({
-  dishes: z.array(z.string()).describe('List of identified Indian dishes.'),
-  estimatedNutritionalContent: z
-    .string()
-    .describe('Estimated nutritional content of the meal.'),
-  analysisNotes: z.string().optional().describe('Any additional notes from the analysis.'),
-});
 export type AnalyzeIndianFoodImageOutput = z.infer<typeof AnalyzeIndianFoodImageOutputSchema>;
 
 export async function analyzeIndianFoodImage(
@@ -42,23 +25,46 @@ const prompt = ai.definePrompt({
   name: 'analyzeIndianFoodImagePrompt',
   input: {schema: AnalyzeIndianFoodImageInputSchema},
   output: {schema: AnalyzeIndianFoodImageOutputSchema},
-  prompt: `You are an expert in Indian cuisine and nutrition.
+  prompt: `
+    You are an expert Indian nutritionist. Analyze the provided input based on the mode.
+    
+    Current Mode: {{{mode}}}
 
-You will analyze the image of the Indian meal and identify the dishes present.
-Then, you will estimate the nutritional content of the meal based on your knowledge of Indian food and typical portion sizes.
+    {{#if (eq mode "barcode")}}
+      Analyze this image of a packaged food product.
+      1. Identify the product name from the packaging.
+      2. Extract nutrition information per serving from the label.
+      
+      Return strictly JSON using the provided output schema. Set food_type to "packaged".
+      Image: {{media url=photoDataUri}}
+    {{/if}}
 
-Use the following as the primary source of information about the meal:
+    {{#if (eq mode "meal")}}
+      You are an expert Indian nutritionist. Analyze this food image.
+      
+      CRITICAL INSTRUCTION: You MUST break down the meal into its INDIVIDUAL separate items. 
+      DO NOT group them into a single entry like "Meal" or "Plate". 
+      For example, if you see a plate with an egg and a roti:
+      - Item 1: Fried Egg (approx 50g)
+      - Item 2: Roti (approx 35g)
+      
+      Every single piece of food must be its own object in the "items" array with its own estimated calories and macros based on standard Indian portion sizes.
+      Calculate the totals based on the individual items.
 
-Image: {{media url=photoDataUri}}
-
-{% if analysisRefinementInstructions %}
-Analysis Refinement Instructions: {{{analysisRefinementInstructions}}}
-{% endif %}
-
-Dishes: output a list of the dishes you identified.
-Nutritional Content: provide a detailed estimation of the nutritional content of the meal.
-Analysis Notes: Include any additional notes or observations about the meal or your analysis.
-`,
+      Return strictly JSON using the provided output schema. Set food_type to "prepared".
+      Image: {{media url=photoDataUri}}
+    {{/if}}
+    
+    {{#if (eq mode "text")}}
+      Analyze this meal description: "{{{textInput}}}".
+      
+      CRITICAL: Break down the text into separate individual food items. 
+      Example: "2 rotis and an egg" -> Item 1: Roti (Quantity: 2), Item 2: Egg (Quantity: 1).
+      Calculate calories and macros for each item individually and then sum them for the totals.
+      
+      Return strictly JSON using the provided output schema. Set food_type to "prepared".
+    {{/if}}
+  `,
 });
 
 const analyzeIndianFoodImageFlow = ai.defineFlow(
@@ -69,6 +75,9 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("Analysis failed to produce an output.");
+    }
+    return output;
   }
 );

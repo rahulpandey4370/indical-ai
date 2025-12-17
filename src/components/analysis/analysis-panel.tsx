@@ -1,14 +1,16 @@
+
 'use client';
 
-import { ChangeEvent, useState, useTransition } from 'react';
-import { useFormState } from 'react-dom';
+import { ChangeEvent, useState, useTransition, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Upload, Sparkles, Send, Save, Loader2, RefreshCw } from 'lucide-react';
-import { analyzeImage, refineAnalysis, commitToJourney } from '@/lib/actions';
+import { analyzeIndianFoodImage } from '@/ai/flows/analyze-indian-food-image';
+import { refineNutritionalAnalysis } from '@/ai/flows/refine-nutritional-analysis';
+import { Upload, Sparkles, Send, Save, Loader2, RefreshCw, CheckCircle, Bot } from 'lucide-react';
+import { commitToJourney } from '@/lib/actions';
 import type {
   NutritionalAnalysis,
-  RefinedNutritionalAnalysis,
   HistoryEntry,
+  ChatMessage,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,19 +25,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
 import { NutritionalChart } from './nutritional-chart';
-import { Badge } from '../ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { useUser } from '@/hooks/use-user';
-
-const initialAnalysisState: {
-  result?: NutritionalAnalysis | null;
-  error?: string | null;
-} = {};
-const initialRefinementState: {
-  result?: RefinedNutritionalAnalysis | null;
-  error?: string | null;
-} = {};
+import { Utensils } from 'lucide-react';
 
 export function AnalysisPanel({
   date,
@@ -43,50 +36,97 @@ export function AnalysisPanel({
   existingEntry,
 }: {
   date: Date;
-  closePanel: () => void;
-  existingEntry?: HistoryEntry | null;
+  closePanel: (refresh?: boolean) => void;
+  existingEntry: HistoryEntry;
 }) {
   const { user } = useUser();
   const [imagePreview, setImagePreview] = useState<string | null>(
     existingEntry?.imageUrl || null
   );
-  const [analysisState, analyzeAction] = useFormState(
-    analyzeImage,
-    existingEntry
-      ? { result: existingEntry.analysis, error: null }
-      : initialAnalysisState
-  );
-  const [refinementState, refineAction] = useFormState(
-    refineAnalysis,
-    initialRefinementState
-  );
+  
+  const [analysisResult, setAnalysisResult] = useState<NutritionalAnalysis | null>(existingEntry?.analysis || null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [refinementInput, setRefinementInput] = useState("");
+  const [isRefining, setIsRefining] = useState(false);
+
   const [isCommitPending, startCommitTransition] = useTransition();
   const { toast } = useToast();
+  const analysisChatScrollRef = useRef<HTMLDivElement>(null);
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+
+  useEffect(() => {
+    // If it's a new entry (not editing), and there's no analysis result yet, run analysis.
+    if (!existingEntry.id && !analysisResult) {
+      handleInitialAnalysis();
+    } else if (existingEntry.id) {
+       setChatMessages([{ role: 'model', text: "Ready to update this entry. What changed?" }]);
+    }
+  }, []);
+
+  useEffect(() => {
+    analysisChatScrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const handleInitialAnalysis = async () => {
+    if (!existingEntry.mode) {
+        setAnalysisError("Analysis mode is not defined.");
+        return;
+    }
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+    try {
+      const result = await analyzeIndianFoodImage({
+        photoDataUri: existingEntry.imageUrl,
+        textInput: existingEntry.textInput,
+        mode: existingEntry.mode,
+      });
+      setAnalysisResult(result);
+      setChatMessages([{ role: 'model', text: `I've analyzed your ${existingEntry.mode}. Everything looks high quality! I found ${result.items.length} items.` }]);
+    } catch (e: any) {
+      setAnalysisError(e.message || 'An unknown error occurred during analysis.');
+      toast({
+        variant: 'destructive',
+        title: 'Analysis Failed',
+        description: e.message || 'Could not analyze the provided input.',
+      });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
-  const resetFlow = () => {
-    setImagePreview(null);
-    analysisState.result = null;
-    analysisState.error = null;
-    refinementState.result = null;
-    refinementState.error = null;
-    // A bit of a hack to force re-render of the form
-    const imageInput = document.getElementById('image') as HTMLInputElement;
-    if (imageInput) {
-      imageInput.value = '';
+  const handleRefine = async () => {
+    if (!refinementInput.trim() || !analysisResult) return;
+
+    const userMsg = refinementInput;
+    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setRefinementInput("");
+    setIsRefining(true);
+
+    try {
+      const response = await refineNutritionalAnalysis({
+        initialAnalysis: analysisResult,
+        refinementInstruction: userMsg,
+      });
+      if (response.refinedAnalysis) {
+        setAnalysisResult(response.refinedAnalysis);
+      }
+      setChatMessages(prev => [...prev, { role: 'model', text: response.responseText }]);
+    } catch (e: any) {
+      const errorMessage = e.message || "Sorry, I couldn't refine that right now.";
+      setChatMessages(prev => [...prev, { role: 'model', text: errorMessage }]);
+      toast({
+        variant: 'destructive',
+        title: 'Refinement Failed',
+        description: errorMessage,
+      });
+    } finally {
+      setIsRefining(false);
     }
   };
-  
+
   const handleCommit = () => {
     if (!user) {
       toast({
@@ -96,12 +136,11 @@ export function AnalysisPanel({
       });
       return;
     }
-    const finalAnalysis = refinementState.result ?? analysisState.result;
-    if (!finalAnalysis || !imagePreview) return;
+    if (!analysisResult) return;
 
     startCommitTransition(async () => {
       const result = await commitToJourney(
-        finalAnalysis,
+        analysisResult,
         imagePreview,
         date,
         user.id,
@@ -112,7 +151,7 @@ export function AnalysisPanel({
           title: 'Success!',
           description: result.message,
         });
-        closePanel();
+        closePanel(true);
       } else {
         toast({
           variant: 'destructive',
@@ -122,206 +161,144 @@ export function AnalysisPanel({
       }
     });
   };
-
-  const analysisResult = analysisState.result;
-  const refinedResult = refinementState.result;
-  const currentAnalysisText =
-    refinedResult?.refinedAnalysis ??
-    analysisResult?.estimatedNutritionalContent;
-
+  
   return (
-    <div className="py-6">
-      {!analysisResult ? (
-        <ImageUploadForm
-          action={analyzeAction}
-          onImageChange={handleImageChange}
-          imagePreview={imagePreview}
-          error={analysisState.error}
-        />
-      ) : (
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Analysis Complete</span>
-                <Button variant="ghost" size="icon" onClick={resetFlow}>
-                  <RefreshCw className="h-4 w-4" />
-                  <span className="sr-only">Start Over</span>
-                </Button>
-              </CardTitle>
-              <CardDescription>
-                Here is the AI's analysis of your meal. You can refine it below.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {imagePreview && (
-                <div className="relative aspect-video w-full overflow-hidden rounded-lg border">
-                  <Image
-                    src={imagePreview}
-                    alt="Meal preview"
-                    fill
-                    objectFit="cover"
-                  />
-                </div>
-              )}
-              <div className="space-y-2">
-                <h4 className="font-semibold">Identified Dishes</h4>
-                <div className="flex flex-wrap gap-2">
-                  {analysisResult.dishes.map((dish) => (
-                    <Badge key={dish} variant="secondary">
-                      {dish}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              {currentAnalysisText && (
-                <div className="space-y-4">
-                  <h4 className="font-semibold">Nutritional Information</h4>
-                  <NutritionalChart nutritionString={currentAnalysisText} />
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {currentAnalysisText}
-                  </p>
-                </div>
-              )}
-              {analysisResult.analysisNotes && (
-                <div className="space-y-2">
-                  <h4 className="font-semibold">AI Notes</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {analysisResult.analysisNotes}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Refine Analysis</CardTitle>
-              <CardDescription>
-                Not quite right? Tell the AI how to improve the analysis.
-              </CardDescription>
-            </CardHeader>
-            <form action={refineAction}>
-              <CardContent className="space-y-4">
-                <input
-                  type="hidden"
-                  name="initialAnalysis"
-                  value={analysisResult.estimatedNutritionalContent}
-                />
-                <Textarea
-                  name="refinementInstructions"
-                  placeholder="e.g., 'The portion of rice was smaller.' or 'That's not paneer, it's tofu.'"
-                  rows={3}
-                />
-                {refinementState.error && (
-                  <p className="text-sm text-destructive">
-                    {refinementState.error}
-                  </p>
-                )}
-              </CardContent>
-              <CardFooter>
-                <SubmitButton icon={<Sparkles />} text="Refine" />
-              </CardFooter>
-            </form>
-          </Card>
-          <div className="flex justify-end">
-            <Button size="lg" onClick={handleCommit} disabled={isCommitPending}>
-              {isCommitPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="mr-2 h-4 w-4" />
-              )}
-              Commit to Journey
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ImageUploadForm({
-  action,
-  onImageChange,
-  imagePreview,
-  error,
-}: {
-  action: (payload: FormData) => void;
-  onImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  imagePreview: string | null;
-  error?: string | null;
-}) {
-  const [pending, startTransition] = useTransition();
-
-  return (
-    <form
-      action={(formData) => {
-        if (!imagePreview) return;
-        formData.set('photoDataUri', imagePreview);
-        startTransition(() => action(formData));
-      }}
-    >
-      <Card>
-        <CardHeader>
-          <CardTitle>Upload Meal Photo</CardTitle>
-          <CardDescription>
-            Upload a picture of your meal to get started.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Input
-            id="image"
-            type="file"
-            accept="image/*"
-            onChange={onImageChange}
-            required
-          />
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 pb-32">
+        <div className="space-y-10">
           {imagePreview && (
-            <div className="mt-4 relative aspect-video w-full overflow-hidden rounded-lg border">
-              <Image
-                src={imagePreview}
-                alt="Meal preview"
-                fill
-                objectFit="cover"
-              />
+            <div className="rounded-[56px] overflow-hidden shadow-2xl aspect-square bg-white border-[12px] border-white dark:border-slate-900 ring-1 ring-slate-200/50 dark:ring-white/5 group relative">
+              <Image src={imagePreview} alt="Meal" layout="fill" objectFit="cover" className="group-hover:scale-110 transition-transform duration-1000" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
             </div>
           )}
-          {error && (
-            <Alert variant="destructive">
-              <AlertTitle>Analysis Failed</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+          {isAnalyzing && (
+            <div className="py-24 text-center flex flex-col items-center">
+              <div className="relative">
+                <Loader2 className="animate-spin text-primary mb-8" size={72} strokeWidth={3} />
+                <div className="absolute inset-0 bg-primary blur-2xl opacity-20 animate-pulse"></div>
+              </div>
+              <p className="font-black text-3xl tracking-tight mb-2">Deconstructing Dishes...</p>
+              <p className="text-sm font-medium opacity-40 uppercase tracking-[0.2em]">AI Vision Active</p>
+            </div>
           )}
-        </CardContent>
-        <CardFooter>
-          {pending ? (
-            <LoadingSpinner />
-          ) : (
-            <SubmitButton
-              icon={<Send />}
-              text="Analyze Meal"
-              disabled={!imagePreview}
-            />
+          {!isAnalyzing && analysisResult && (
+            <div className="bg-card rounded-[56px] p-10 shadow-2xl border border-border space-y-12">
+              <div className="animate-in fade-in zoom-in duration-700">
+                  <NutritionalChart analysis={analysisResult} />
+              </div>
+              
+              <div className="p-8 bg-muted/50 dark:bg-slate-800/50 rounded-[44px] border border-border/50 shadow-inner animate-in slide-in-from-bottom-4 duration-700">
+                  <div className="flex items-baseline gap-3 mb-3">
+                    <span className="text-8xl font-black tracking-tighter text-primary leading-none">{analysisResult.total_calories}</span>
+                    <span className="text-xl font-black opacity-30 uppercase tracking-[0.1em]">Total Kcal</span>
+                  </div>
+                  <p className="text-sm opacity-50 leading-relaxed font-bold italic border-l-4 border-primary pl-4 py-1">
+                    "{analysisResult.summary}"
+                  </p>
+              </div>
+              
+              <div className="space-y-6">
+                  <div className="flex items-center justify-between px-4">
+                    <h4 className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Composition Details</h4>
+                    <span className="text-[10px] font-black text-primary-foreground px-4 py-1.5 bg-foreground rounded-full shadow-lg">
+                      {analysisResult.items.length} ITEM{analysisResult.items.length !== 1 ? 'S' : ''}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {analysisResult.items.map((item, i) => (
+                      <div 
+                        key={i} 
+                        className="group flex justify-between items-center p-8 bg-card rounded-[38px] border border-border/50 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-in slide-in-from-right-4"
+                        style={{ animationDelay: `${i * 100}ms` }}
+                      >
+                        <div className="flex items-center gap-6">
+                          <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                            <Utensils size={24} />
+                          </div>
+                          <div>
+                            <div className="font-black text-xl tracking-tight group-hover:text-primary transition-colors">{item.name}</div>
+                            <div className="text-[10px] font-black opacity-40 uppercase tracking-widest mt-1">{item.weight_g}g Serving</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-black text-3xl tracking-tighter text-foreground">{item.calories}</div>
+                          <div className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em]">Kcal</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+              </div>
+            </div>
           )}
-        </CardFooter>
-      </Card>
-    </form>
-  );
-}
+        </div>
+        
+        <div className="space-y-10 flex flex-col h-full">
+          {!isAnalyzing && analysisResult && (
+              <>
+                <div className="flex-1 flex flex-col bg-card rounded-[56px] border border-border shadow-2xl overflow-hidden min-h-[500px] animate-in slide-in-from-bottom-8 duration-700">
+                  <div className="p-8 border-b border-border bg-muted/50 flex items-center justify-between backdrop-blur-md">
+                    <div className="flex items-center gap-3">
+                      <Bot className="text-primary" size={24} />
+                      <h4 className="text-[11px] font-black uppercase tracking-[0.2em]">AI Dialogue</h4>
+                    </div>
+                    <span className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+                      <span className="text-[9px] font-black uppercase tracking-[0.15em] opacity-40">Session Verified</span>
+                    </span>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
+                    {chatMessages.map((m, i) => (
+                      <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] p-7 rounded-[38px] shadow-sm text-sm font-bold leading-relaxed ${m.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-muted text-foreground rounded-tl-none'}`}>
+                          {m.text}
+                        </div>
+                      </div>
+                    ))}
+                    {isRefining && (
+                      <div className="flex justify-start">
+                        <div className="px-8 py-5 rounded-[38px] bg-muted/50 flex gap-2">
+                          <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay:'0ms'}} />
+                          <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay:'150ms'}} />
+                          <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay:'300ms'}} />
+                        </div>
+                      </div>
+                    )}
+                    <div ref={analysisChatScrollRef} />
+                  </div>
+                  
+                  <div className="p-8 bg-muted/30 border-t border-border">
+                    <div className="relative flex items-center">
+                      <Input 
+                        type="text" 
+                        value={refinementInput}
+                        onChange={(e) => setRefinementInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleRefine()}
+                        placeholder="Portion incorrect? Just tell me..."
+                        className="w-full bg-background pl-6 pr-20 py-8 rounded-[32px] border-border focus:ring-8 focus:ring-primary/5 text-sm font-bold shadow-sm transition-all placeholder:opacity-40"
+                      />
+                      <Button onClick={handleRefine} size="icon" className="absolute right-4 p-4 h-14 w-14 bg-foreground text-background rounded-2xl shadow-xl active:scale-90 hover:scale-105 transition-all">
+                        <Send size={22}/>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
 
-function SubmitButton({
-  icon,
-  text,
-  disabled = false,
-}: {
-  icon: React.ReactNode;
-  text: string;
-  disabled?: boolean;
-}) {
-  return (
-    <Button type="submit" className="w-full" disabled={disabled}>
-      {icon}
-      <span>{text}</span>
-    </Button>
+                <Button 
+                  onClick={handleCommit} 
+                  disabled={isCommitPending}
+                  className="group relative w-full py-9 rounded-[44px] bg-foreground text-background font-black text-2xl shadow-lg active:scale-[0.98] hover:scale-[1.01] transition-all overflow-hidden disabled:opacity-50"
+                >
+                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="flex items-center justify-center gap-5 relative z-10">
+                    {isCommitPending ? <Loader2 size={36} className="animate-spin" /> : <CheckCircle size={36} strokeWidth={2.5}/>}
+                    <span>{existingEntry?.id ? 'Finalize Changes' : 'Record This Meal'}</span>
+                  </div>
+                </Button>
+              </>
+          )}
+        </div>
+    </div>
   );
 }
