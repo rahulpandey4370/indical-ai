@@ -9,10 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { BarChart, Sparkles, Zap, Target, BrainCircuit, Activity, BarChart3 } from 'lucide-react';
+import { BarChart as BarChartIcon, Sparkles, Zap, Target, BrainCircuit, Activity } from 'lucide-react';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
 import { subDays, format } from 'date-fns';
-import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -73,6 +73,12 @@ export default function InsightsPage() {
     setInsightsLoading(true);
     setInsightsError(null);
     try {
+        const filteredHistory = history.filter(entry => {
+          const entryDate = new Date(entry.timestamp);
+          const range = parseInt(timeRange);
+          return entryDate >= subDays(new Date(), range);
+        });
+
         const result = await generateInsights({
             history: filteredHistory,
             goals,
@@ -100,15 +106,9 @@ export default function InsightsPage() {
       toast({title: "Plan Applied!", description: `${plan.planName} goals have been set as your new daily targets.`})
   }
 
-  const filteredHistory = history.filter(entry => {
-    const entryDate = new Date(entry.timestamp);
-    const range = parseInt(timeRange);
-    return entryDate >= subDays(new Date(), range);
-  });
-
   const chartData = Array.from({ length: parseInt(timeRange) }, (_, i) => {
     const date = subDays(new Date(), parseInt(timeRange) - 1 - i);
-    const dayEntries = filteredHistory.filter(
+    const dayEntries = history.filter(
       (entry) => new Date(entry.timestamp).toDateString() === date.toDateString()
     );
     const totalCalories = dayEntries.reduce((acc, curr) => acc + curr.analysis.total_calories, 0);
@@ -132,7 +132,7 @@ export default function InsightsPage() {
                     <div className='flex justify-between items-center'>
                         <div>
                             <CardTitle className="font-black tracking-tighter text-3xl flex items-center gap-3">
-                                <BarChart3 size={28} className="text-primary"/>
+                                <BarChartIcon size={28} className="text-primary"/>
                                 Performance Insights
                             </CardTitle>
                             <CardDescription className="mt-1">Your nutritional dashboard for the last {timeRange} days.</CardDescription>
@@ -150,7 +150,7 @@ export default function InsightsPage() {
                     </div>
                  </CardHeader>
                  <CardContent className="p-6">
-                    {filteredHistory.length > 0 ? (
+                    {chartData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={chartData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border) / 0.5)" />
@@ -346,3 +346,5 @@ export default function InsightsPage() {
     </div>
   );
 }
+
+    
