@@ -1,11 +1,11 @@
 
 'use client';
 
-import { ChangeEvent, useState, useTransition, useEffect, useRef } from 'react';
+import { useState, useTransition, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { analyzeIndianFoodImage } from '@/ai/flows/analyze-indian-food-image';
 import { refineNutritionalAnalysis } from '@/ai/flows/refine-nutritional-analysis';
-import { Upload, Sparkles, Send, Save, Loader2, RefreshCw, CheckCircle, Bot } from 'lucide-react';
+import { Send, Save, Loader2, CheckCircle, Bot } from 'lucide-react';
 import { commitToJourney } from '@/lib/actions';
 import type {
   NutritionalAnalysis,
@@ -13,20 +13,9 @@ import type {
   ChatMessage,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { LoadingSpinner } from '@/components/shared/loading-spinner';
 import { NutritionalChart } from './nutritional-chart';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { useUser } from '@/hooks/use-user';
 import { Utensils } from 'lucide-react';
 
@@ -100,15 +89,15 @@ export function AnalysisPanel({
   const handleRefine = async () => {
     if (!refinementInput.trim() || !analysisResult) return;
 
-    const userMsg = refinementInput;
-    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    const userMsg = { role: 'user' as const, text: refinementInput };
+    setChatMessages(prev => [...prev, userMsg]);
     setRefinementInput("");
     setIsRefining(true);
 
     try {
       const response = await refineNutritionalAnalysis({
         initialAnalysis: analysisResult,
-        refinementInstruction: userMsg,
+        refinementInstruction: userMsg.text,
       });
       if (response.refinedAnalysis) {
         setAnalysisResult(response.refinedAnalysis);
@@ -144,7 +133,9 @@ export function AnalysisPanel({
         imagePreview,
         date,
         user.id,
-        existingEntry?.id
+        existingEntry?.id,
+        existingEntry?.mode,
+        existingEntry?.textInput,
       );
       if (result.success) {
         toast({
@@ -278,7 +269,7 @@ export function AnalysisPanel({
                         placeholder="Portion incorrect? Just tell me..."
                         className="w-full bg-background pl-6 pr-20 py-8 rounded-[32px] border-border focus:ring-8 focus:ring-primary/5 text-sm font-bold shadow-sm transition-all placeholder:opacity-40"
                       />
-                      <Button onClick={handleRefine} size="icon" className="absolute right-4 p-4 h-14 w-14 bg-foreground text-background rounded-2xl shadow-xl active:scale-90 hover:scale-105 transition-all">
+                      <Button onClick={handleRefine} disabled={isRefining} size="icon" className="absolute right-4 p-4 h-14 w-14 bg-foreground text-background rounded-2xl shadow-xl active:scale-90 hover:scale-105 transition-all">
                         <Send size={22}/>
                       </Button>
                     </div>
@@ -302,3 +293,5 @@ export function AnalysisPanel({
     </div>
   );
 }
+
+    

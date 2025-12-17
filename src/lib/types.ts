@@ -1,4 +1,5 @@
 
+
 export type MacroNutrients = {
   protein: number;
   carbs: number;
@@ -32,6 +33,8 @@ export type HistoryEntry = {
   timestamp: string;
   analysis: NutritionalAnalysis;
   imageUrl: string;
+  mode?: 'meal' | 'barcode' | 'text';
+  textInput?: string;
 };
 
 export type ChatMessage = {
@@ -45,3 +48,5 @@ export type UserGoals = {
   carbs: number;
   fat: number;
 };
+
+    

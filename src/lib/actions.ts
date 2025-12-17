@@ -23,11 +23,11 @@ const database = cosmosClient.database(cosmosDatabaseId);
 const container = database.container(cosmosContainerId);
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(blobConnectionString);
-const containerClient = blobServiceClient.getContainerClient(blobContainerName);
+const blobContainerClient = blobServiceClient.getContainerClient(blobContainerName);
 
 async function uploadImageToBlob(imageUri: string, userId: string): Promise<string> {
     const blobName = `${userId}/${uuidv4()}.jpg`;
-    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+    const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
     
     const base64Data = imageUri.split(',')[1];
     const buffer = Buffer.from(base64Data, 'base64');
@@ -44,8 +44,10 @@ export async function commitToJourney(
   imageUri: string | null,
   date: Date,
   userId: string,
-  docId?: string
-): Promise<{ success: boolean; message: string }> {
+  docId?: string | null,
+  mode?: 'meal' | 'barcode' | 'text',
+  textInput?: string
+): Promise<{ success: boolean; message: string; entry?: HistoryEntry }> {
   try {
     let imageUrl = imageUri;
     // Only upload if the image is a new base64 image
@@ -53,22 +55,27 @@ export async function commitToJourney(
         imageUrl = await uploadImageToBlob(imageUri, userId);
     }
 
-    const entryToSave: Omit<HistoryEntry, 'id'> & { id?: string, userId: string } = {
+    const entryToSave: Omit<HistoryEntry, 'id'> & { id: string, userId: string, partitionKey: string } = {
+      id: docId || uuidv4(),
       userId,
-      analysis: analysis,
+      partitionKey: userId,
+      analysis,
       imageUrl: imageUrl || '',
       timestamp: date.toISOString(),
+      mode,
+      textInput
     };
-
+    
     if (docId) {
-        entryToSave.id = docId;
         await container.item(docId, userId).replace(entryToSave);
     } else {
-        entryToSave.id = uuidv4();
         await container.items.create(entryToSave);
     }
 
-    return { success: true, message: 'Meal logged successfully!' };
+    // strip partitionKey before returning
+    const { partitionKey, ...rest } = entryToSave;
+
+    return { success: true, message: 'Meal logged successfully!', entry: rest };
   } catch (error: any) {
     console.error('Failed to commit to journey', error);
     return { success: false, message: error.message || 'Failed to log meal.' };
@@ -89,17 +96,27 @@ export async function getHistory(userId: string): Promise<HistoryEntry[]> {
         ]
       };
   
-      const { resources: items } = await container.items.query(querySpec).fetchAll();
-      return items as HistoryEntry[];
+      const { resources: items } = await container.items.query<HistoryEntry>(querySpec, {partitionKey: userId}).fetchAll();
+      return items;
     } catch (error) {
       console.error('Failed to fetch history from Cosmos DB', error);
       return [];
     }
 }
 
+export async function deleteHistoryEntry(userId: string, entryId: string): Promise<{success: boolean, message: string}> {
+  try {
+    await container.item(entryId, userId).delete();
+    return { success: true, message: "Entry deleted." };
+  } catch (error: any) {
+    console.error('Failed to delete history entry', error);
+    return { success: false, message: error.message || "Failed to delete entry." };
+  }
+}
+
 export async function getGoals(userId: string): Promise<UserGoals | null> {
     const blobName = `${userId}/goals.json`;
-    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+    const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
 
     try {
         const downloadBlockBlobResponse = await blockBlobClient.download(0);
@@ -116,10 +133,12 @@ export async function getGoals(userId: string): Promise<UserGoals | null> {
 
 export async function saveGoals(userId: string, goals: UserGoals): Promise<{success: boolean}> {
     const blobName = `${userId}/goals.json`;
-    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+    const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
     const data = JSON.stringify(goals);
     try {
-        await blockBlobClient.upload(data, data.length);
+        await blockBlobClient.upload(data, data.length, {
+          blobHTTPHeaders: { blobContentType: 'application/json' }
+        });
         return { success: true };
     } catch (error) {
         console.error('Failed to save goals to Blob Storage', error);
@@ -142,3 +161,5 @@ async function streamToBuffer(readableStream: NodeJS.ReadableStream | undefined)
         readableStream.on('error', reject);
     });
 }
+
+    

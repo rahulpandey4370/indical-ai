@@ -16,14 +16,15 @@ import {
 } from '@/components/ui/sheet';
 import { AnalysisPanel } from '@/components/analysis/analysis-panel';
 import type { HistoryEntry, UserGoals, ChatMessage } from '@/lib/types';
-import { getHistory, getGoals, saveGoals } from '@/lib/actions';
+import { getHistory, saveGoals, getGoals, deleteHistoryEntry } from '@/lib/actions';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
-import { Bot, Camera, Loader2, ScanBarcode, Sparkles, Type, Upload, X, Send } from 'lucide-react';
+import { Bot, Loader2, Sparkles, Type, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getAssistantResponse } from '@/ai/flows/get-assistant-response';
+import { useToast } from '@/hooks/use-toast';
 
 const DEFAULT_GOALS: UserGoals = {
   calories: 2000,
@@ -57,6 +58,7 @@ export default function Home() {
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const assistantScrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   
   useEffect(() => {
     const savedTheme = localStorage.getItem('indical_theme');
@@ -124,9 +126,10 @@ export default function Home() {
   }
 
   const startAnalysis = (data: string | null, mode: 'meal' | 'barcode' | 'text', text?: string) => {
+    if (!user) return;
     setSelectedEntry({
-      id: '',
-      userId: user!.id,
+      id: '', // Will be generated on commit
+      userId: user.id,
       timestamp: selectedDate.toISOString(),
       analysis: null as any, // This will be filled by the analysis panel
       imageUrl: data || '',
@@ -149,10 +152,17 @@ export default function Home() {
     setView('analysis');
   };
 
-  const handleDeleteEntry = (id: string) => {
-    // TODO: Implement delete functionality with Azure
+  const handleDeleteEntry = async (id: string) => {
+    if(!user) return;
     setHistory(prev => prev.filter(h => h.id !== id));
-    console.log('Delete entry:', id);
+    const result = await deleteHistoryEntry(user.id, id);
+    if (!result.success) {
+      toast({ variant: 'destructive', title: "Error", description: result.message });
+      // Re-fetch to be safe
+      getHistory(user.id).then(setHistory);
+    } else {
+       toast({ title: "Success", description: "Log entry deleted." });
+    }
   };
 
   const handleAnalysisClose = (refresh?: boolean) => {
@@ -171,23 +181,32 @@ export default function Home() {
     setGoals(newGoals);
     await saveGoals(user.id, newGoals);
     setShowGoalModal(false);
+    toast({ title: 'Goals updated!', description: 'Your new targets have been saved.' });
   }
 
   const handleAssistantSend = async () => {
     if (!assistantInput.trim() || !user) return;
-    const userMsg: ChatMessage = { role: 'user', text: assistantInput };
-    setAssistantChat(prev => [...prev, userMsg]);
+    
+    const currentChat = [...assistantChat, { role: 'user' as const, text: assistantInput }];
+    setAssistantChat(currentChat);
     setAssistantInput("");
     setProcessingAssistant(true);
-    const response = await getAssistantResponse({
-      userMessage: userMsg.text,
-      history: history,
-      goals: goals,
-      chatHistory: assistantChat,
-      currentDate: selectedDate.toDateString()
-    });
-    setAssistantChat(prev => [...prev, { role: 'model', text: response }]);
-    setProcessingAssistant(false);
+    
+    try {
+      const response = await getAssistantResponse({
+        userMessage: currentChat[currentChat.length -1].text,
+        history: history,
+        goals: goals,
+        chatHistory: currentChat.slice(0, -1),
+        currentDate: selectedDate.toDateString()
+      });
+      setAssistantChat(prev => [...prev, { role: 'model', text: response }]);
+    } catch(e: any) {
+        setAssistantChat(prev => [...prev, { role: 'model', text: "Sorry, I'm having trouble connecting right now." }]);
+        toast({ variant: 'destructive', title: "Assistant Error", description: e.message });
+    } finally {
+        setProcessingAssistant(false);
+    }
   };
 
 
@@ -242,8 +261,8 @@ export default function Home() {
 
       {/* Assistant Panel */}
       <Sheet open={isAssistantOpen} onOpenChange={setIsAssistantOpen}>
-          <SheetContent className="w-full sm:max-w-lg overflow-y-auto flex flex-col">
-            <SheetHeader className='p-6'>
+          <SheetContent className="w-full sm:max-w-lg overflow-y-auto flex flex-col p-0">
+            <SheetHeader className='p-6 pb-4 border-b'>
               <SheetTitle className="font-headline flex items-center gap-3 text-2xl">
                  <Bot className="text-primary" size={28}/> Health Companion
               </SheetTitle>
@@ -261,7 +280,7 @@ export default function Home() {
                 ))}
                 {processingAssistant && (
                   <div className="flex justify-start">
-                    <div className="p-4 rounded-2xl bg-muted flex gap-2">
+                    <div className="p-4 rounded-2xl bg-muted flex items-center gap-2">
                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay:'0ms'}} />
                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay:'150ms'}} />
                        <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{animationDelay:'300ms'}} />
@@ -270,10 +289,10 @@ export default function Home() {
                 )}
                <div ref={assistantScrollRef} />
              </div>
-             <div className="p-6 border-t">
+             <div className="p-4 border-t bg-background">
               <div className="relative flex items-center">
                 <Input type="text" value={assistantInput} onChange={(e) => setAssistantInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAssistantSend()} placeholder="Ask about macros..." className="pr-12" />
-                <Button onClick={handleAssistantSend} size="icon" className="absolute right-2" variant="ghost">
+                <Button onClick={handleAssistantSend} disabled={processingAssistant} size="icon" className="absolute right-2" variant="ghost">
                   <Send size={20}/>
                 </Button>
               </div>
@@ -292,8 +311,7 @@ export default function Home() {
              <Textarea value={textLogInput} onChange={e => setTextLogInput(e.target.value)} placeholder="e.g., 1 Egg, 2 Roti, and a cup of Masala Chai..." rows={4}/>
            </div>
            <Button onClick={handleTextLogSubmit} disabled={!textLogInput.trim() || loading} className="w-full" size="lg">
-              {loading ? <Loader2 className="animate-spin" /> : <Sparkles className="mr-2"/>}
-              Analyze Text
+              {loading ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2"/> Analyze Text</>}
            </Button>
         </DialogContent>
       </Dialog>
@@ -342,3 +360,5 @@ declare module '@/lib/types' {
     textInput?: string;
   }
 }
+
+    
