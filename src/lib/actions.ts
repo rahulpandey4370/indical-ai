@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { analyzeIndianFoodImage } from '@/ai/flows/analyze-indian-food-image';
 import { refineNutritionalAnalysis } from '@/ai/flows/refine-nutritional-analysis';
 import type { NutritionalAnalysis, RefinedNutritionalAnalysis } from './types';
+import { initializeFirebase } from '@/firebase';
+import { doc, setDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 interface AnalysisState {
   error?: string | null;
@@ -45,7 +47,9 @@ interface RefinementState {
 
 const RefineAnalysisSchema = z.object({
   initialAnalysis: z.string().min(1),
-  refinementInstructions: z.string().min(1, 'Refinement instructions are required.'),
+  refinementInstructions: z
+    .string()
+    .min(1, 'Refinement instructions are required.'),
 });
 
 export async function refineAnalysis(
@@ -67,41 +71,47 @@ export async function refineAnalysis(
     const result = await refineNutritionalAnalysis(validatedFields.data);
     return { result };
   } catch (e: any) {
-    return { error: e.message || 'An unknown error occurred during refinement.' };
+    return {
+      error: e.message || 'An unknown error occurred during refinement.',
+    };
   }
 }
 
 export async function commitToJourney(
   analysis: NutritionalAnalysis | RefinedNutritionalAnalysis,
   imageUri: string,
-  date: Date
+  date: Date,
+  userId: string,
+  docId?: string
 ) {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  try {
+    const { firestore } = initializeFirebase();
+    const historyCollection = collection(firestore, 'users', userId, 'history');
+    const docRef = docId ? doc(historyCollection, docId) : doc(historyCollection);
+    
+    // In a real app, you'd upload the image to Firebase Storage and get a URL
+    // For now, we'll store the data URI directly, which is not recommended for production
+    const finalAnalysis =
+      'refinedAnalysis' in analysis
+        ? {
+            // This is a bit of a hack, we should ideally be able to get the full analysis object after refinement
+            dishes: ['Refined Meal'],
+            estimatedNutritionalContent: analysis.refinedAnalysis,
+            analysisNotes: 'Refined by user.',
+          }
+        : analysis;
 
-  console.log('Committing to journey:', { analysis, imageUri, date });
-  // TODO: Implement atomic write to a persistent database like Firebase Firestore
-  // and upload the image to a storage service like Firebase Storage.
-  //
-  // Example with Firestore (you would need to set up Firebase in your project):
-  //
-  // import { db, storage } from '@/lib/firebase';
-  // import { doc, setDoc } from 'firebase/firestore';
-  // import { ref, uploadString } from 'firebase/storage';
-  //
-  // const logId = date.toISOString().split('T')[0];
-  // const docRef = doc(db, 'nutritionLogs', logId);
-  // const storageRef = ref(storage, `mealImages/${logId}.jpg`);
-  //
-  // try {
-  //   await uploadString(storageRef, imageUri, 'data_url');
-  //   const imageUrl = await getDownloadURL(storageRef);
-  //   await setDoc(docRef, { ...analysis, imageUrl, date });
-  //   return { success: true, message: 'Meal logged successfully!' };
-  // } catch (error) {
-  //   console.error("Failed to commit to journey", error);
-  //   return { success: false, message: 'Failed to log meal.' };
-  // }
-  
-  return { success: true, message: 'Meal logged successfully!' };
+    await setDoc(docRef, {
+      id: docRef.id,
+      analysis: finalAnalysis,
+      imageUrl: imageUri, // In production, this should be a gs:// or https:// URL from Firebase Storage
+      timestamp: date.toISOString(),
+      updatedAt: serverTimestamp(),
+    });
+
+    return { success: true, message: 'Meal logged successfully!' };
+  } catch (error: any) {
+    console.error('Failed to commit to journey', error);
+    return { success: false, message: error.message || 'Failed to log meal.' };
+  }
 }

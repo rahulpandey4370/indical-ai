@@ -1,0 +1,130 @@
+'use client';
+import { useState } from 'react';
+import Image from 'next/image';
+import { HistoryEntry } from '@/lib/types';
+import { Copy, Check, Trash2, ChevronRight, Utensils } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+interface HistoryLogProps {
+  history: HistoryEntry[];
+  onSelect: (entry: HistoryEntry) => void;
+  onDelete: (id: string) => void;
+}
+
+const HistoryLog: React.FC<HistoryLogProps> = ({
+  history,
+  onSelect,
+  onDelete,
+}) => {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (e: React.MouseEvent, entry: HistoryEntry) => {
+    e.stopPropagation();
+    const itemsList = entry.analysis.dishes.join(', ');
+    const textToCopy = `IndiCal AI Log:\nMeal: ${itemsList}\nAnalysis: ${
+      entry.analysis.estimatedNutritionalContent
+    }\nDate: ${new Date(entry.timestamp).toLocaleString()}`;
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopiedId(entry.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
+  const handleAction = (e: React.MouseEvent, action: () => void) => {
+    e.stopPropagation();
+    action();
+  };
+
+  if (history.length === 0) {
+    return null;
+  }
+
+  const getCalories = (entry: HistoryEntry) => {
+    const match = entry.analysis.estimatedNutritionalContent.match(
+      /calories:\s*~?(\d+)/i
+    );
+    return match ? parseInt(match[1], 10) : 0;
+  };
+
+  return (
+    <div className="space-y-5 px-1 pb-24 pt-8">
+      {history.map((entry) => (
+        <div
+          key={entry.id}
+          onClick={() => onSelect(entry)}
+          className="group flex items-center gap-6 p-6 bg-card rounded-[40px] shadow-sm border border-border cursor-pointer active:scale-[0.98] hover:shadow-2xl hover:border-primary/40 hover:-translate-y-1 transition-all duration-500 overflow-hidden"
+        >
+          <div className="h-20 w-20 lg:h-24 lg:w-24 rounded-[32px] overflow-hidden flex-shrink-0 bg-muted border border-border shadow-inner">
+            {entry.imageUrl ? (
+              <Image
+                src={entry.imageUrl}
+                alt="Meal"
+                className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
+                width={96}
+                height={96}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-primary/5">
+                <Utensils className="opacity-30 text-primary" size={28} />
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[9px] font-black uppercase tracking-[0.15em] text-primary px-2 py-0.5 bg-primary/10 rounded-full">
+                Logged
+              </span>
+              <span className="text-[10px] font-bold opacity-40">
+                {new Date(entry.timestamp).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            </div>
+            <h4 className="font-black text-card-foreground truncate text-xl mb-1.5 group-hover:text-primary transition-colors tracking-tight">
+              {entry.analysis.dishes.join(', ')}
+            </h4>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-black text-foreground tracking-tighter">
+                {getCalories(entry)}
+              </span>
+              <span className="text-[10px] font-black opacity-30 uppercase tracking-widest">
+                kcal
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-2 items-center lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => handleCopy(e, entry)}
+              className={`rounded-2xl transition-all duration-300 ${
+                copiedId === entry.id
+                  ? 'bg-green-500 text-white shadow-lg shadow-green-500/20'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {copiedId === entry.id ? <Check size={18} /> : <Copy size={18} />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => handleAction(e, () => onDelete(entry.id))}
+              className="rounded-2xl bg-secondary text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
+            >
+              <Trash2 size={18} />
+            </Button>
+            <div className="p-3 rounded-2xl bg-primary/10 text-primary lg:block hidden">
+              <ChevronRight size={18} />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default HistoryLog;
