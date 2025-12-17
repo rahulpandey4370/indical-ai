@@ -97,7 +97,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
           </div>
 
           <div className="flex gap-2 items-center lg:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <Button
+             <Button
               variant="ghost"
               size="icon"
               onClick={(e) => handleCopy(e, entry)}
