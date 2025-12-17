@@ -5,7 +5,7 @@ import { useState, useTransition, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { analyzeIndianFoodImage } from '@/ai/flows/analyze-indian-food-image';
 import { refineNutritionalAnalysis } from '@/ai/flows/refine-nutritional-analysis';
-import { Send, Save, Loader2, CheckCircle, Bot } from 'lucide-react';
+import { Send, Save, Loader2, CheckCircle, Bot, AlertTriangle } from 'lucide-react';
 import { commitToJourney } from '@/lib/actions';
 import type {
   NutritionalAnalysis,
@@ -18,6 +18,7 @@ import { NutritionalChart } from './nutritional-chart';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 import { Utensils } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export function AnalysisPanel({
   date,
@@ -75,11 +76,12 @@ export function AnalysisPanel({
       setAnalysisResult(result);
       setChatMessages([{ role: 'model', text: `I've analyzed your ${existingEntry.mode}. Everything looks high quality! I found ${result.items.length} items.` }]);
     } catch (e: any) {
-      setAnalysisError(e.message || 'An unknown error occurred during analysis.');
+      const errorMessage = e.message || 'An unknown error occurred during analysis.';
+      setAnalysisError(errorMessage);
       toast({
         variant: 'destructive',
         title: 'Analysis Failed',
-        description: e.message || 'Could not analyze the provided input.',
+        description: errorMessage,
       });
     } finally {
       setIsAnalyzing(false);
@@ -172,7 +174,25 @@ export function AnalysisPanel({
               <p className="text-sm font-medium opacity-40 uppercase tracking-[0.2em]">AI Vision Active</p>
             </div>
           )}
-          {!isAnalyzing && analysisResult && (
+           {analysisError && !isAnalyzing && (
+            <Alert variant="destructive" className="rounded-[44px] p-8">
+              <AlertTriangle className="h-6 w-6" />
+              <AlertTitle className="text-xl font-black mt-2">Analysis Failed</AlertTitle>
+              <AlertDescription className="mt-4 font-mono bg-destructive/10 p-4 rounded-lg text-destructive-foreground/80">
+                {analysisError}
+              </AlertDescription>
+              <div className="mt-6">
+                <Button onClick={handleInitialAnalysis} variant="destructive">
+                  Try Again
+                </Button>
+                <Button onClick={() => closePanel()} variant="ghost" className="ml-2">
+                  Cancel
+                </Button>
+              </div>
+            </Alert>
+          )}
+
+          {!isAnalyzing && !analysisError && analysisResult && (
             <div className="bg-card rounded-[56px] p-10 shadow-2xl border border-border space-y-12">
               <div className="animate-in fade-in zoom-in duration-700">
                   <NutritionalChart analysis={analysisResult} />
@@ -225,7 +245,7 @@ export function AnalysisPanel({
         </div>
         
         <div className="space-y-10 flex flex-col h-full">
-          {!isAnalyzing && analysisResult && (
+          {!isAnalyzing && !analysisError && analysisResult && (
               <>
                 <div className="flex-1 flex flex-col bg-card rounded-[56px] border border-border shadow-2xl overflow-hidden min-h-[500px] animate-in slide-in-from-bottom-8 duration-700">
                   <div className="p-8 border-b border-border bg-muted/50 flex items-center justify-between backdrop-blur-md">
