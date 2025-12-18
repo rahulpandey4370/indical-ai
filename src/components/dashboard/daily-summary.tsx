@@ -4,8 +4,11 @@ import { Card } from '@/components/ui/card';
 import MacroProgress from './macro-progress';
 import { HistoryEntry, UserGoals } from '@/lib/types';
 import { parseNutritionString } from '@/lib/utils';
-import { addDays, format, isSameDay, subDays } from 'date-fns';
-import { Sparkles, Target } from 'lucide-react';
+import { addDays, format, isSameDay, subDays, startOfWeek, endOfWeek } from 'date-fns';
+import { Sparkles, Target, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 
 interface DailySummaryProps {
   selectedDate: Date;
@@ -22,8 +25,17 @@ export default function DailySummary({
   goals,
   onGoalsClick,
 }: DailySummaryProps) {
-  const today = new Date();
-  const dates = Array.from({ length: 14 }, (_, i) => subDays(today, 7 - i));
+  
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
+  const dates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  const handlePreviousWeek = () => {
+    onDateChange(subDays(selectedDate, 7));
+  };
+
+  const handleNextWeek = () => {
+    onDateChange(addDays(selectedDate, 7));
+  };
 
   const totalMacros = entries.reduce(
     (acc, entry) => {
@@ -47,12 +59,41 @@ export default function DailySummary({
 
   return (
     <div className="w-full space-y-6 md:space-y-8">
+      <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h3 className="text-xl font-bold tracking-tight">{format(selectedDate, 'MMMM yyyy')}</h3>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <CalendarIcon size={16} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && onDateChange(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button onClick={handlePreviousWeek} variant="outline" size="icon" className="h-8 w-8">
+              <ChevronLeft size={16} />
+            </Button>
+            <Button onClick={handleNextWeek} variant="outline" size="icon" className="h-8 w-8">
+              <ChevronRight size={16} />
+            </Button>
+          </div>
+      </div>
+
       <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
         {dates.map((date, index) => (
           <button
             key={index}
             onClick={() => onDateChange(date)}
-            className={`flex-shrink-0 w-16 h-20 md:w-20 md:h-24 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center transition-all duration-300 ${
+            className={`flex-shrink-0 w-16 h-20 md:w-20 md:h-24 rounded-2xl md:rounded-3xl flex flex-col items-center justify-center transition-all duration-300 flex-1 ${
               isSameDay(date, selectedDate)
                 ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105'
                 : 'bg-card text-card-foreground border hover:bg-muted'
