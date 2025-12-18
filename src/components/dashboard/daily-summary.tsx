@@ -3,11 +3,14 @@ import { Card } from '@/components/ui/card';
 import MacroProgress from './macro-progress';
 import { HistoryEntry, UserGoals } from '@/lib/types';
 import { parseNutritionString } from '@/lib/utils';
-import { addDays, format, isSameDay, subDays, startOfWeek, endOfWeek } from 'date-fns';
+import { addDays, format, isSameDay, subDays, startOfWeek } from 'date-fns';
 import { Sparkles, Target, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
+import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
 
 interface DailySummaryProps {
   selectedDate: Date;
@@ -69,12 +72,12 @@ export default function DailySummary({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(date) => date && onDateChange(date)}
-                  initialFocus
-                />
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DateCalendar 
+                    value={dayjs(selectedDate)}
+                    onChange={(newValue) => newValue && onDateChange(newValue.toDate())}
+                  />
+                </LocalizationProvider>
               </PopoverContent>
             </Popover>
           </div>
