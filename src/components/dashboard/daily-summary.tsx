@@ -1,4 +1,3 @@
-
 'use client';
 import { Card } from '@/components/ui/card';
 import MacroProgress from './macro-progress';
@@ -26,7 +25,8 @@ export default function DailySummary({
   onGoalsClick,
 }: DailySummaryProps) {
   
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 }); // Sunday
+
   const dates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   const handlePreviousWeek = () => {
