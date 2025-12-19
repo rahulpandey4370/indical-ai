@@ -42,6 +42,7 @@ export function AnalysisPanel({
   const [refinementInput, setRefinementInput] = useState("");
   const [isRefining, setIsRefining] = useState(false);
   const [mealType, setMealType] = useState<MealType>(existingEntry?.mealType || 'Lunch');
+  const [mealName, setMealName] = useState<string>(existingEntry?.mealName || '');
 
   const [isCommitPending, startCommitTransition] = useTransition();
   const { toast } = useToast();
@@ -75,6 +76,11 @@ export function AnalysisPanel({
         mode: existingEntry.mode,
       });
       setAnalysisResult(result);
+      if (!mealName && existingEntry.mode === 'text' && result.items.length === 1) {
+        setMealName(result.items[0].name);
+      } else if (!mealName) {
+        setMealName(result.summary);
+      }
       setChatMessages([{ role: 'model', text: `I've analyzed your ${existingEntry.mode}. Everything looks high quality! I found ${result.items.length} items.` }]);
     } catch (e: any) {
       const errorMessage = e.message || 'An unknown error occurred during analysis.';
@@ -141,6 +147,7 @@ export function AnalysisPanel({
         existingEntry?.id,
         existingEntry?.mode,
         existingEntry?.textInput,
+        mealName,
       );
       if (result.success) {
         toast({
@@ -261,7 +268,7 @@ export function AnalysisPanel({
           )}
         </div>
         
-        <div className="space-y-10 flex flex-col h-full">
+        <div className="space-y-6 flex flex-col h-full">
           {!isAnalyzing && !analysisError && analysisResult && (
               <>
                 <div className="flex-1 flex flex-col bg-card rounded-[56px] border border-border shadow-2xl overflow-hidden min-h-[500px] animate-in slide-in-from-bottom-8 duration-700">
@@ -315,6 +322,15 @@ export function AnalysisPanel({
                 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-2">Meal Name</label>
+                        <Input 
+                            value={mealName}
+                            onChange={(e) => setMealName(e.target.value)}
+                            placeholder="e.g., Post-workout Lunch"
+                            className="w-full mt-1 py-6 rounded-2xl text-lg font-bold border-2"
+                        />
+                    </div>
+                    <div>
                         <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-2">Meal Type</label>
                         <Select value={mealType} onValueChange={(v: MealType) => setMealType(v)}>
                             <SelectTrigger className="w-full mt-1 py-6 rounded-2xl text-lg font-bold border-2">
@@ -328,18 +344,19 @@ export function AnalysisPanel({
                             </SelectContent>
                         </Select>
                     </div>
-                    <Button 
-                      onClick={handleCommit} 
-                      disabled={isCommitPending}
-                      className="group relative w-full self-end py-9 rounded-[44px] bg-foreground text-background font-black text-2xl shadow-lg active:scale-[0.98] hover:scale-[1.01] transition-all overflow-hidden disabled:opacity-50"
-                    >
-                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="flex items-center justify-center gap-5 relative z-10">
-                        {isCommitPending ? <Loader2 size={36} className="animate-spin" /> : <CheckCircle size={36} strokeWidth={2.5}/>}
-                        <span>{existingEntry?.id ? 'Finalize' : 'Record'}</span>
-                      </div>
-                    </Button>
                 </div>
+
+                <Button 
+                  onClick={handleCommit} 
+                  disabled={isCommitPending}
+                  className="group relative w-full self-end py-9 rounded-[44px] bg-foreground text-background font-black text-2xl shadow-lg active:scale-[0.98] hover:scale-[1.01] transition-all overflow-hidden disabled:opacity-50"
+                >
+                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="flex items-center justify-center gap-5 relative z-10">
+                    {isCommitPending ? <Loader2 size={36} className="animate-spin" /> : <CheckCircle size={36} strokeWidth={2.5}/>}
+                    <span>{existingEntry?.id ? 'Finalize' : 'Record'}</span>
+                  </div>
+                </Button>
               </>
           )}
         </div>

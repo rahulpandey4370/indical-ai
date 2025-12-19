@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -33,6 +34,7 @@ export async function commitToJourney(
   docId?: string | null,
   mode?: 'meal' | 'barcode' | 'text',
   textInput?: string,
+  mealName?: string,
 ): Promise<{ success: boolean; message: string; entry?: HistoryEntry }> {
   try {
     // Validation: ensure we're not receiving base64 data here
@@ -49,7 +51,8 @@ export async function commitToJourney(
       timestamp: date.toISOString(),
       mode,
       textInput,
-      mealType
+      mealType,
+      mealName
     };
     
     if (docId) {

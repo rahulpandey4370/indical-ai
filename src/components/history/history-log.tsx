@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
@@ -30,7 +31,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
 
   const handleCopy = (e: React.MouseEvent, entry: HistoryEntry) => {
     e.stopPropagation();
-    const itemsList = entry.analysis.items.map(i => `${i.name} (${i.weight_g}g)`).join(', ');
+    const itemsList = entry.analysis.items.map(i => `${i.name} (${i.weight}${i.unit})`).join(', ');
     const textToCopy = `IndiCal AI Log:\nMeal: ${itemsList}\nTotal: ${entry.analysis.total_calories} kcal\nDate: ${new Date(entry.timestamp).toLocaleString()}`;
 
     navigator.clipboard.writeText(textToCopy).then(() => {
@@ -69,7 +70,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
             {entry.imageUrl ? (
               <Image
                 src={entry.imageUrl}
-                alt="Meal"
+                alt={entry.mealName || "Meal"}
                 className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700"
                 width={96}
                 height={96}
@@ -97,7 +98,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
               </span>
             </div>
             <h4 className="font-black text-card-foreground truncate text-xl mb-1.5 group-hover:text-primary transition-colors tracking-tight">
-              {entry.analysis.items.map(i => i.name).join(', ')}
+              {entry.mealName || entry.analysis.items.map(i => i.name).join(', ')}
             </h4>
             <div className="flex items-baseline gap-1">
               <span className="text-2xl font-black text-foreground tracking-tighter">

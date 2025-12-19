@@ -40,6 +40,7 @@ export type HistoryEntry = {
   mode?: 'meal' | 'barcode' | 'text';
   textInput?: string;
   mealType?: MealType;
+  mealName?: string;
 };
 
 export type ChatMessage = {
