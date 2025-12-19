@@ -26,7 +26,7 @@ export default function MacroProgress({
 
   return (
     <div className="space-y-3">
-        <div className={cn("flex justify-between items-center text-[11px] font-black uppercase tracking-[0.15em] drop-shadow-sm", isOver && "text-red-300")}>
+        <div className={cn("flex justify-between items-center text-[11px] font-black uppercase tracking-[0.15em]", isOver && "text-red-300")} style={{textShadow: '0 1px 2px rgba(0,0,0,0.2)'}}>
           <span className="opacity-80">{label}</span>
           <span>{Math.round(value)} / {goal}g</span>
         </div>
