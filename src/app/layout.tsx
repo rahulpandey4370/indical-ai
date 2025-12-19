@@ -57,6 +57,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/icon.ico" sizes="any" />
         <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/logo.png"></link>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
