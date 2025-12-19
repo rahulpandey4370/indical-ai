@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -91,10 +92,16 @@ export default function Home() {
 
   const startAnalysis = (data: string | null, mode: 'meal' | 'barcode' | 'text', text?: string) => {
     if (!user) return;
+    const timestamp = new Date();
+    // Ensure the new log has the date of the selected day, but the time of now.
+    timestamp.setFullYear(selectedDate.getFullYear());
+    timestamp.setMonth(selectedDate.getMonth());
+    timestamp.setDate(selectedDate.getDate());
+
     setSelectedEntry({
       id: '', // Will be generated on commit
       userId: user.id,
-      timestamp: selectedDate.toISOString(),
+      timestamp: timestamp.toISOString(),
       analysis: null as any, // This will be filled by the analysis panel
       imageUrl: data || '',
       mode: mode,
@@ -188,7 +195,6 @@ export default function Home() {
         {view === 'analysis' && selectedEntry && (
            <AnalysisPanel
               key={selectedEntry.id || 'new'}
-              date={selectedDate}
               closePanel={handleAnalysisClose}
               existingEntry={selectedEntry}
             />

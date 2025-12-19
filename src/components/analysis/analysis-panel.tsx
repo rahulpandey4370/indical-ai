@@ -23,11 +23,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export function AnalysisPanel({
-  date,
   closePanel,
   existingEntry,
 }: {
-  date: Date;
   closePanel: (refresh?: boolean) => void;
   existingEntry: HistoryEntry;
 }) {
@@ -136,7 +134,7 @@ export function AnalysisPanel({
       const result = await commitToJourney(
         analysisResult,
         imagePreview,
-        date,
+        new Date(existingEntry.timestamp),
         user.id,
         mealType,
         existingEntry?.id,
