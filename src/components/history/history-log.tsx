@@ -1,9 +1,8 @@
-
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
 import { HistoryEntry } from '@/lib/types';
-import { Copy, Check, Trash2, ChevronRight, Utensils, Coffee, Sun, Moon as MoonIcon, Cookie } from 'lucide-react';
+import { Copy, Check, Trash2, ChevronRight, Utensils, Coffee, Sun, Moon, Cookie } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface HistoryLogProps {
@@ -16,7 +15,7 @@ const MealTypeIcon = ({type}: {type?: string}) => {
     switch (type) {
         case 'Breakfast': return <Coffee size={16} className="text-amber-500" />;
         case 'Lunch': return <Sun size={16} className="text-orange-500" />;
-        case 'Dinner': return <MoonIcon size={16} className="text-indigo-500" />;
+        case 'Dinner': return <Moon size={16} className="text-indigo-500" />;
         case 'Snack': return <Cookie size={16} className="text-yellow-600" />;
         default: return null;
     }

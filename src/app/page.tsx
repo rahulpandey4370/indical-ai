@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -153,10 +152,13 @@ export default function Home() {
   }
   
   const todayEntries =
-    history?.filter(
-      (entry) =>
-        new Date(entry.timestamp).toDateString() === selectedDate.toDateString()
-    ) ?? [];
+    history
+      ?.filter(
+        (entry) =>
+          new Date(entry.timestamp).toDateString() === selectedDate.toDateString()
+      )
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      ?? [];
 
   return (
     <div className="flex-1 bg-muted/30 dark:bg-slate-950/50">
@@ -247,12 +249,4 @@ export default function Home() {
       <input type="file" ref={uploadInputRef} accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
     </div>
   );
-}
-
-// Add a mode to the HistoryEntry to be used in the analysis panel
-declare module '@/lib/types' {
-  interface HistoryEntry {
-    mode?: 'meal' | 'barcode' | 'text';
-    textInput?: string;
-  }
 }
