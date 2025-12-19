@@ -24,30 +24,6 @@ const container = database.container(cosmosContainerId);
 const blobServiceClient = BlobServiceClient.fromConnectionString(blobConnectionString);
 const blobContainerClient = blobServiceClient.getContainerClient(blobContainerName);
 
-// NEW: Separate server action for uploading images
-export async function uploadImageToBlob(imageUri: string, userId: string): Promise<{ success: boolean; url?: string; error?: string }> {
-  try {
-    if (!imageUri || !imageUri.startsWith('data:image')) {
-      throw new Error('Invalid image data');
-    }
-
-    const blobName = `${userId}/${uuidv4()}.jpg`;
-    const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
-    
-    const base64Data = imageUri.split(',')[1];
-    const buffer = Buffer.from(base64Data, 'base64');
-    
-    await blockBlobClient.upload(buffer, buffer.length, {
-      blobHTTPHeaders: { blobContentType: 'image/jpeg' }
-    });
-  
-    return { success: true, url: blockBlobClient.url };
-  } catch (error: any) {
-    console.error('Failed to upload image to blob:', error);
-    return { success: false, error: error.message || 'Failed to upload image' };
-  }
-}
-
 export async function commitToJourney(
   analysis: NutritionalAnalysis,
   imageUrl: string | null, // This should now ALWAYS be a URL, never base64
