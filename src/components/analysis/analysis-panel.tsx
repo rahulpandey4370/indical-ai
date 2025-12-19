@@ -82,7 +82,7 @@ export function AnalysisPanel({
       toast({
         variant: 'destructive',
         title: 'Analysis Failed',
-        description: errorMessage,
+        description: 'Please try again.',
       });
     } finally {
       setIsAnalyzing(false);
@@ -180,7 +180,7 @@ export function AnalysisPanel({
             <Alert variant="destructive" className="rounded-[44px] p-8">
               <AlertTriangle className="h-6 w-6" />
               <AlertTitle className="text-xl font-black mt-2">Analysis Failed</AlertTitle>
-              <AlertDescription className="mt-4 font-mono bg-destructive/10 p-4 rounded-lg text-destructive-foreground/80">
+              <AlertDescription className="mt-4 font-mono bg-destructive/10 p-4 rounded-lg text-destructive-foreground/80 break-words">
                 {analysisError}
               </AlertDescription>
               <div className="mt-6">
@@ -331,3 +331,5 @@ export function AnalysisPanel({
     </div>
   );
 }
+
+    

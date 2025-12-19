@@ -45,3 +45,5 @@ const nextConfig: NextConfig = {
 };
 
 export default pwaConfig(nextConfig);
+
+    
