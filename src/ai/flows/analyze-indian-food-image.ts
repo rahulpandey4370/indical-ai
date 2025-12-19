@@ -34,43 +34,34 @@ const prompt = ai.definePrompt({
   prompt: `
     You are an expert Indian nutritionist. Analyze the provided input.
     
-    {{#if photoDataUri}}
-      {{#if isBarcodeMode}}{
-        Analyze this image of a packaged food product.
-        1. Identify the product name from the packaging.
-        2. Extract nutrition information per serving from the label.
-        
-        Return strictly JSON using the provided output schema. Set food_type to "packaged".
-        Image: {{media url=photoDataUri}}
-      {{/if}}
+    {{#if isBarcodeMode}}
+      You are analyzing an image of a packaged food product barcode.
+      1. Identify the product name from the packaging.
+      2. Extract nutrition information per serving from the label.
+      Return strictly JSON using the provided output schema. Set food_type to "packaged".
+      Image: {{media url=photoDataUri}}
+    {{else if isMealMode}}
+      You are an expert Indian nutritionist analyzing a food image.
+      
+      CRITICAL INSTRUCTION: You MUST break down the meal into its INDIVIDUAL separate items. 
+      DO NOT group them into a single entry like "Meal" or "Plate". 
+      For example, if you see a plate with an egg and a roti:
+      - Item 1: Fried Egg (approx 50g)
+      - Item 2: Roti (approx 35g)
+      
+      Every single piece of food must be its own object in the "items" array with its own estimated calories and macros based on standard Indian portion sizes.
+      Calculate the totals based on the individual items.
 
-      {{#if isMealMode}}{
-        You are an expert Indian nutritionist. Analyze this food image.
-        
-        CRITICAL INSTRUCTION: You MUST break down the meal into its INDIVIDUAL separate items. 
-        DO NOT group them into a single entry like "Meal" or "Plate". 
-        For example, if you see a plate with an egg and a roti:
-        - Item 1: Fried Egg (approx 50g)
-        - Item 2: Roti (approx 35g)
-        
-        Every single piece of food must be its own object in the "items" array with its own estimated calories and macros based on standard Indian portion sizes.
-        Calculate the totals based on the individual items.
-
-        Return strictly JSON using the provided output schema. Set food_type to "prepared".
-        Image: {{media url=photoDataUri}}
-      {{/if}}
-    {{/if}}
-    
-    {{#if textInput}}
-      {{#if isTextMode}}
-        Analyze this meal description: "{{{textInput}}}".
-        
-        CRITICAL: Break down the text into separate individual food items. 
-        Example: "2 rotis and an egg" -> Item 1: Roti (Quantity: 2), Item 2: Egg (Quantity: 1).
-        Calculate calories and macros for each item individually and then sum them for the totals.
-        
-        Return strictly JSON using the provided output schema. Set food_type to "prepared".
-      {{/if}}
+      Return strictly JSON using the provided output schema. Set food_type to "prepared".
+      Image: {{media url=photoDataUri}}
+    {{else if isTextMode}}
+      You are analyzing this meal description: "{{{textInput}}}".
+      
+      CRITICAL: Break down the text into separate individual food items. 
+      Example: "2 rotis and an egg" -> Item 1: Roti (Quantity: 2), Item 2: Egg (Quantity: 1).
+      Calculate calories and macros for each item individually and then sum them for the totals.
+      
+      Return strictly JSON using the provided output schema. Set food_type to "prepared".
     {{/if}}
   `,
 });
