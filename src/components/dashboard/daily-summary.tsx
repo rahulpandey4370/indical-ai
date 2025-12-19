@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 
 interface DailySummaryProps {
   selectedDate: Date;
@@ -57,8 +57,6 @@ export default function DailySummary({
     const { calories } = parseNutritionString(entry.analysis);
     return acc + calories;
   }, 0);
-
-  const remainingCalories = goals.calories - totalCalories;
 
   return (
     <div className="w-full space-y-6 md:space-y-8">
@@ -120,10 +118,10 @@ export default function DailySummary({
           </div>
           <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
               <div>
-                  <h2 className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">Remaining Energy</h2>
+                  <h2 className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">Calories Consumed</h2>
                   <div className="flex items-baseline gap-2">
-                      <span className="text-5xl md:text-6xl font-black tracking-tighter">{Math.max(0, remainingCalories).toLocaleString()}</span>
-                      <span className="text-lg font-bold opacity-70">kcal</span>
+                      <span className="text-5xl md:text-6xl font-black tracking-tighter">{totalCalories.toLocaleString()}</span>
+                      <span className="text-lg font-bold opacity-70">/ {goals.calories.toLocaleString()} kcal</span>
                   </div>
               </div>
               <button onClick={onGoalsClick} className="p-3 bg-white/20 backdrop-blur-xl rounded-2xl hover:bg-white/30 transition-all active:scale-90">
