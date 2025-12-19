@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import heic2any from 'heic2any';
 
 const DEFAULT_GOALS: UserGoals = {
   calories: 2000,
@@ -76,15 +77,36 @@ export default function Home() {
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, mode: 'meal' | 'barcode') => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, mode: 'meal' | 'barcode') => {
      if (event.target.files?.[0]) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUri = reader.result as string;
-        startAnalysis(dataUri, mode);
-      };
-      reader.readAsDataURL(file);
+      let file = event.target.files[0];
+      setLoading(true);
+      toast({ title: 'Processing image...', description: 'Please wait while we prepare your photo.' });
+
+      try {
+        // Check if the file is HEIC/HEIF and convert it
+        if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
+          toast({ title: 'Converting HEIC image...', description: 'This may take a moment.' });
+          const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg' });
+          file = new File([convertedBlob as Blob], file.name.replace(/\.heic$/, '.jpg'), { type: 'image/jpeg' });
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUri = reader.result as string;
+          startAnalysis(dataUri, mode);
+          setLoading(false);
+        };
+        reader.onerror = () => {
+          setLoading(false);
+          toast({ variant: 'destructive', title: 'Error', description: 'Failed to read the file.' });
+        }
+        reader.readAsDataURL(file);
+
+      } catch (e: any) {
+        setLoading(false);
+        toast({ variant: 'destructive', title: 'Error processing image', description: e.message || 'Could not process the selected image.' });
+      }
     }
     // reset input value
     if(event.target) event.target.value = '';
@@ -94,14 +116,14 @@ export default function Home() {
     if (!user) return;
     const timestamp = new Date();
     // Ensure the new log has the date of the selected day, but the time of now.
-    timestamp.setFullYear(selectedDate.getFullYear());
-    timestamp.setMonth(selectedDate.getMonth());
-    timestamp.setDate(selectedDate.getDate());
+    const combinedDate = new Date(selectedDate);
+    combinedDate.setHours(timestamp.getHours(), timestamp.getMinutes(), timestamp.getSeconds(), timestamp.getMilliseconds());
+
 
     setSelectedEntry({
       id: '', // Will be generated on commit
       userId: user.id,
-      timestamp: timestamp.toISOString(),
+      timestamp: combinedDate.toISOString(),
       analysis: null as any, // This will be filled by the analysis panel
       imageUrl: data || '',
       mode: mode,
@@ -250,9 +272,9 @@ export default function Home() {
       </Dialog>
 
       {/* Hidden file inputs */}
-      <input type="file" ref={fileInputRef} accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
-      <input type="file" ref={barcodeInputRef} accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'barcode')} />
-      <input type="file" ref={uploadInputRef} accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
+      <input type="file" ref={fileInputRef} accept="image/*,.heic,.heif" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
+      <input type="file" ref={barcodeInputRef} accept="image/*,.heic,.heif" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'barcode')} />
+      <input type="file" ref={uploadInputRef} accept="image/*,.heic,.heif" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
     </div>
   );
 }
