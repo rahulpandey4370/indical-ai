@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { analyzeIndianFoodImage } from '@/ai/flows/analyze-indian-food-image';
 import { refineNutritionalAnalysis } from '@/ai/flows/refine-nutritional-analysis';
-import { Send, Save, Loader2, CheckCircle, Bot, AlertTriangle } from 'lucide-react';
+import { Send, Save, Loader2, CheckCircle, Bot, AlertTriangle, Calendar as CalendarIcon } from 'lucide-react';
 import { commitToJourney } from '@/lib/actions';
 import type {
   NutritionalAnalysis,
@@ -21,6 +20,9 @@ import { useUser } from '@/hooks/use-user';
 import { Utensils } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
 
 export function AnalysisPanel({
   closePanel,
@@ -43,6 +45,7 @@ export function AnalysisPanel({
   const [isRefining, setIsRefining] = useState(false);
   const [mealType, setMealType] = useState<MealType>(existingEntry?.mealType || 'Lunch');
   const [mealName, setMealName] = useState<string>(existingEntry?.mealName || '');
+  const [entryDate, setEntryDate] = useState<Date>(new Date(existingEntry.timestamp));
 
   const [isCommitPending, startCommitTransition] = useTransition();
   const { toast } = useToast();
@@ -137,11 +140,15 @@ export function AnalysisPanel({
     if (!analysisResult) return;
 
     startCommitTransition(async () => {
-      // Pass imagePreview which is now always a URL (never base64)
+      // Create a new date object from entryDate but keep the time from the original timestamp
+      const originalTime = new Date(existingEntry.timestamp);
+      const finalDate = new Date(entryDate);
+      finalDate.setHours(originalTime.getHours(), originalTime.getMinutes(), originalTime.getSeconds(), originalTime.getMilliseconds());
+      
       const result = await commitToJourney(
         analysisResult,
-        imagePreview, // This is a URL, safe to send
-        new Date(existingEntry.timestamp),
+        imagePreview,
+        finalDate,
         user.id,
         mealType,
         existingEntry?.id,
@@ -345,6 +352,32 @@ export function AnalysisPanel({
                         </Select>
                     </div>
                 </div>
+
+                 <div className="grid grid-cols-1">
+                    <div>
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-2">Log Date</label>
+                         <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className="w-full mt-1 py-6 rounded-2xl text-lg font-bold border-2 flex justify-start"
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {format(entryDate, "PPP")}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                mode="single"
+                                selected={entryDate}
+                                onSelect={(date) => date && setEntryDate(date)}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                </div>
+
 
                 <Button 
                   onClick={handleCommit} 
