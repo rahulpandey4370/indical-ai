@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -16,7 +15,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import heic2any from 'heic2any';
 
 const DEFAULT_GOALS: UserGoals = {
   calories: 2000,
@@ -87,6 +85,7 @@ export default function Home() {
         // Check if the file is HEIC/HEIF and convert it
         if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
           toast({ title: 'Converting HEIC image...', description: 'This may take a moment.' });
+          const heic2any = (await import('heic2any')).default;
           const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg' });
           file = new File([convertedBlob as Blob], file.name.replace(/\.heic$/, '.jpg'), { type: 'image/jpeg' });
         }
