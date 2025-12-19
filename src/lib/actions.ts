@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 import { refineNutritionalAnalysis } from '@/ai/flows/refine-nutritional-analysis';
-import type { NutritionalAnalysis, HistoryEntry, UserGoals } from './types';
+import type { NutritionalAnalysis, HistoryEntry, UserGoals, MealType } from './types';
 import { CosmosClient } from '@azure/cosmos';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
@@ -44,9 +44,10 @@ export async function commitToJourney(
   imageUri: string | null,
   date: Date,
   userId: string,
+  mealType: MealType,
   docId?: string | null,
   mode?: 'meal' | 'barcode' | 'text',
-  textInput?: string
+  textInput?: string,
 ): Promise<{ success: boolean; message: string; entry?: HistoryEntry }> {
   try {
     let imageUrl = imageUri;
@@ -63,7 +64,8 @@ export async function commitToJourney(
       imageUrl: imageUrl || '',
       timestamp: date.toISOString(),
       mode,
-      textInput
+      textInput,
+      mealType
     };
     
     if (docId) {
@@ -161,5 +163,3 @@ async function streamToBuffer(readableStream: NodeJS.ReadableStream | undefined)
         readableStream.on('error', reject);
     });
 }
-
-    

@@ -3,13 +3,23 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { HistoryEntry } from '@/lib/types';
-import { Copy, Check, Trash2, ChevronRight, Utensils } from 'lucide-react';
+import { Copy, Check, Trash2, ChevronRight, Utensils, Coffee, Sun, Moon as MoonIcon, Cookie } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface HistoryLogProps {
   history: HistoryEntry[];
   onSelect: (entry: HistoryEntry) => void;
   onDelete: (id: string) => void;
+}
+
+const MealTypeIcon = ({type}: {type?: string}) => {
+    switch (type) {
+        case 'Breakfast': return <Coffee size={16} className="text-amber-500" />;
+        case 'Lunch': return <Sun size={16} className="text-orange-500" />;
+        case 'Dinner': return <MoonIcon size={16} className="text-indigo-500" />;
+        case 'Snack': return <Cookie size={16} className="text-yellow-600" />;
+        default: return null;
+    }
 }
 
 const HistoryLog: React.FC<HistoryLogProps> = ({
@@ -74,9 +84,12 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[9px] font-black uppercase tracking-[0.15em] text-primary px-2 py-0.5 bg-primary/10 rounded-full">
-                Logged
-              </span>
+              {entry.mealType && (
+                 <span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.15em] text-primary px-2 py-0.5 bg-primary/10 rounded-full">
+                    <MealTypeIcon type={entry.mealType} />
+                    {entry.mealType}
+                </span>
+              )}
               <span className="text-[10px] font-bold opacity-40">
                 {new Date(entry.timestamp).toLocaleTimeString([], {
                   hour: '2-digit',

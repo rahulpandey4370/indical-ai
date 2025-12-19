@@ -175,7 +175,7 @@ export default function Home() {
               <LoadingSpinner className="py-24" />
             ) : (
               <HistoryLog
-                history={history}
+                history={todayEntries}
                 onSelect={handleSelectEntry}
                 onDelete={handleDeleteEntry}
               />

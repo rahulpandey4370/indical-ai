@@ -28,6 +28,8 @@ export type RefinedNutritionalAnalysis = {
   responseText: string;
 };
 
+export type MealType = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
+
 export type HistoryEntry = {
   id: string;
   userId: string;
@@ -36,6 +38,7 @@ export type HistoryEntry = {
   imageUrl: string;
   mode?: 'meal' | 'barcode' | 'text';
   textInput?: string;
+  mealType?: MealType;
 };
 
 export type ChatMessage = {

@@ -11,6 +11,7 @@ import type {
   NutritionalAnalysis,
   HistoryEntry,
   ChatMessage,
+  MealType,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 import { Utensils } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export function AnalysisPanel({
   date,
@@ -41,6 +43,7 @@ export function AnalysisPanel({
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [refinementInput, setRefinementInput] = useState("");
   const [isRefining, setIsRefining] = useState(false);
+  const [mealType, setMealType] = useState<MealType>(existingEntry?.mealType || 'Lunch');
 
   const [isCommitPending, startCommitTransition] = useTransition();
   const { toast } = useToast();
@@ -135,6 +138,7 @@ export function AnalysisPanel({
         imagePreview,
         date,
         user.id,
+        mealType,
         existingEntry?.id,
         existingEntry?.mode,
         existingEntry?.textInput,
@@ -295,23 +299,37 @@ export function AnalysisPanel({
                     </div>
                   </div>
                 </div>
-
-                <Button 
-                  onClick={handleCommit} 
-                  disabled={isCommitPending}
-                  className="group relative w-full py-9 rounded-[44px] bg-foreground text-background font-black text-2xl shadow-lg active:scale-[0.98] hover:scale-[1.01] transition-all overflow-hidden disabled:opacity-50"
-                >
-                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="flex items-center justify-center gap-5 relative z-10">
-                    {isCommitPending ? <Loader2 size={36} className="animate-spin" /> : <CheckCircle size={36} strokeWidth={2.5}/>}
-                    <span>{existingEntry?.id ? 'Finalize Changes' : 'Record This Meal'}</span>
-                  </div>
-                </Button>
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-2">Meal Type</label>
+                        <Select value={mealType} onValueChange={(v: MealType) => setMealType(v)}>
+                            <SelectTrigger className="w-full mt-1 py-6 rounded-2xl text-lg font-bold border-2">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Breakfast">Breakfast</SelectItem>
+                                <SelectItem value="Lunch">Lunch</SelectItem>
+                                <SelectItem value="Dinner">Dinner</SelectItem>
+                                <SelectItem value="Snack">Snack</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <Button 
+                      onClick={handleCommit} 
+                      disabled={isCommitPending}
+                      className="group relative w-full self-end py-9 rounded-[44px] bg-foreground text-background font-black text-2xl shadow-lg active:scale-[0.98] hover:scale-[1.01] transition-all overflow-hidden disabled:opacity-50"
+                    >
+                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="flex items-center justify-center gap-5 relative z-10">
+                        {isCommitPending ? <Loader2 size={36} className="animate-spin" /> : <CheckCircle size={36} strokeWidth={2.5}/>}
+                        <span>{existingEntry?.id ? 'Finalize' : 'Record'}</span>
+                      </div>
+                    </Button>
+                </div>
               </>
           )}
         </div>
     </div>
   );
 }
-
-    
