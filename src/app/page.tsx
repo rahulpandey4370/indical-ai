@@ -78,9 +78,8 @@ export default function Home() {
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, mode: 'meal' | 'barcode') => {
     if (event.target.files?.[0]) {
-      const file = event.target.files[0];
+      let file = event.target.files[0];
       
-      // Validate file size (8MB limit)
       const maxSize = 8 * 1024 * 1024;
       if (file.size > maxSize) {
         toast({ 
@@ -93,14 +92,31 @@ export default function Home() {
       }
 
       setLoading(true);
-      toast({ title: 'Uploading image...', description: 'Please wait...' });
+      toast({ title: 'Processing image...', description: 'Please wait...' });
 
       try {
         if (!user) {
           throw new Error('You must be logged in to upload images.');
         }
 
-        // Upload directly (no base64 conversion needed)
+        // Handle HEIC conversion
+        if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
+          toast({ title: 'Converting HEIC image...', description: 'This may take a moment.' });
+          const heic2any = (await import('heic2any')).default;
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: 'image/jpeg',
+            quality: 0.8,
+          });
+          const convertedFile = new File([convertedBlob as Blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+            type: 'image/jpeg',
+            lastModified: new Date().getTime(),
+          });
+          file = convertedFile;
+          toast({ title: 'Conversion complete!', description: 'Starting upload...' });
+        }
+        
+        toast({ title: 'Uploading image...', description: 'Please wait...' });
         const uploadResult = await uploadImageToBlob(file, user.id);
         
         if (!uploadResult.success || !uploadResult.url) {
@@ -116,7 +132,7 @@ export default function Home() {
         toast({ 
           variant: 'destructive', 
           title: 'Upload failed', 
-          description: e.message || 'Could not upload the selected image.' 
+          description: e.message || 'Could not process the selected image.' 
         });
       }
     }
@@ -283,9 +299,9 @@ export default function Home() {
       </Dialog>
 
       {/* Hidden file inputs */}
-      <input type="file" ref={fileInputRef} accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
-      <input type="file" ref={barcodeInputRef} accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'barcode')} />
-      <input type="file" ref={uploadInputRef} accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
+      <input type="file" ref={fileInputRef} accept="image/*,.heic,.heif" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
+      <input type="file" ref={barcodeInputRef} accept="image/*,.heic,.heif" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'barcode')} />
+      <input type="file" ref={uploadInputRef} accept="image/*,.heic,.heif" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
     </div>
   );
 }
