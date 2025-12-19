@@ -10,7 +10,9 @@ const pwaConfig = withPWA({
 });
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverActions: {
+    bodySizeLimit: '4mb',
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
