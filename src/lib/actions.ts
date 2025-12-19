@@ -1,4 +1,3 @@
-
 'use server';
 
 import { z } from 'zod';
@@ -25,7 +24,13 @@ const container = database.container(cosmosContainerId);
 const blobServiceClient = BlobServiceClient.fromConnectionString(blobConnectionString);
 const blobContainerClient = blobServiceClient.getContainerClient(blobContainerName);
 
-async function uploadImageToBlob(imageUri: string, userId: string): Promise<string> {
+// NEW: Separate server action for uploading images
+export async function uploadImageToBlob(imageUri: string, userId: string): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    if (!imageUri || !imageUri.startsWith('data:image')) {
+      throw new Error('Invalid image data');
+    }
+
     const blobName = `${userId}/${uuidv4()}.jpg`;
     const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
     
@@ -36,12 +41,16 @@ async function uploadImageToBlob(imageUri: string, userId: string): Promise<stri
       blobHTTPHeaders: { blobContentType: 'image/jpeg' }
     });
   
-    return blockBlobClient.url;
+    return { success: true, url: blockBlobClient.url };
+  } catch (error: any) {
+    console.error('Failed to upload image to blob:', error);
+    return { success: false, error: error.message || 'Failed to upload image' };
+  }
 }
 
 export async function commitToJourney(
   analysis: NutritionalAnalysis,
-  imageUri: string | null,
+  imageUrl: string | null, // This should now ALWAYS be a URL, never base64
   date: Date,
   userId: string,
   mealType: MealType,
@@ -50,10 +59,9 @@ export async function commitToJourney(
   textInput?: string,
 ): Promise<{ success: boolean; message: string; entry?: HistoryEntry }> {
   try {
-    let imageUrl = imageUri;
-    // Only upload if the image is a new base64 image
-    if (imageUri && imageUri.startsWith('data:image')) {
-        imageUrl = await uploadImageToBlob(imageUri, userId);
+    // Validation: ensure we're not receiving base64 data here
+    if (imageUrl && imageUrl.startsWith('data:image')) {
+      throw new Error('Image must be uploaded to blob storage before committing. Use uploadImageToBlob first.');
     }
 
     const entryToSave: Omit<HistoryEntry, 'id'> & { id: string, userId: string, partitionKey: string } = {

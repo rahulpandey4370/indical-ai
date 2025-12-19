@@ -7,7 +7,7 @@ import HistoryLog from '@/components/history/history-log';
 import { ActionToolbar } from '@/components/dashboard/action-toolbar';
 import { AnalysisPanel } from '@/components/analysis/analysis-panel';
 import type { HistoryEntry, UserGoals } from '@/lib/types';
-import { getHistory, saveGoals, getGoals, deleteHistoryEntry } from '@/lib/actions';
+import { getHistory, saveGoals, getGoals, deleteHistoryEntry, uploadImageToBlob } from '@/lib/actions';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
 import { Loader2, Sparkles, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -76,47 +76,80 @@ export default function Home() {
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, mode: 'meal' | 'barcode') => {
-     if (event.target.files?.[0]) {
+    if (event.target.files?.[0]) {
       const file = event.target.files[0];
+      
+      // Validate file size (8MB limit)
+      const maxSize = 8 * 1024 * 1024; // 8MB in bytes
+      if (file.size > maxSize) {
+        toast({ 
+          variant: 'destructive', 
+          title: 'File too large', 
+          description: 'Please select an image smaller than 8MB.' 
+        });
+        event.target.value = '';
+        return;
+      }
+
       setLoading(true);
-      toast({ title: 'Processing image...', description: 'Please wait while we prepare your photo.' });
+      toast({ title: 'Uploading image...', description: 'Please wait while we process your photo.' });
 
       try {
+        if (!user) {
+          throw new Error('You must be logged in to upload images.');
+        }
+
+        // Convert to base64 for upload
         const reader = new FileReader();
-        reader.onloadend = () => {
+        reader.onloadend = async () => {
           const dataUri = reader.result as string;
-          startAnalysis(dataUri, mode);
+          
+          // Upload to blob storage immediately
+          const uploadResult = await uploadImageToBlob(dataUri, user.id);
+          
+          if (!uploadResult.success || !uploadResult.url) {
+            throw new Error(uploadResult.error || 'Failed to upload image');
+          }
+
+          // Now start analysis with the uploaded URL
+          startAnalysis(uploadResult.url, mode);
           setLoading(false);
+          toast({ title: 'Upload complete!', description: 'Starting analysis...' });
         };
+        
         reader.onerror = () => {
           setLoading(false);
           toast({ variant: 'destructive', title: 'Error', description: 'Failed to read the file.' });
-        }
+        };
+        
         reader.readAsDataURL(file);
 
       } catch (e: any) {
         setLoading(false);
-        toast({ variant: 'destructive', title: 'Error processing image', description: e.message || 'Could not process the selected image.' });
+        toast({ 
+          variant: 'destructive', 
+          title: 'Upload failed', 
+          description: e.message || 'Could not upload the selected image.' 
+        });
       }
     }
     // reset input value
     if(event.target) event.target.value = '';
-  }
+  };
 
-  const startAnalysis = (data: string | null, mode: 'meal' | 'barcode' | 'text', text?: string) => {
+  const startAnalysis = (imageUrlOrNull: string | null, mode: 'meal' | 'barcode' | 'text', text?: string) => {
     if (!user) return;
     const timestamp = new Date();
     // Ensure the new log has the date of the selected day, but the time of now.
     const combinedDate = new Date(selectedDate);
     combinedDate.setHours(timestamp.getHours(), timestamp.getMinutes(), timestamp.getSeconds(), timestamp.getMilliseconds());
 
-
     setSelectedEntry({
       id: '', // Will be generated on commit
       userId: user.id,
       timestamp: combinedDate.toISOString(),
       analysis: null as any, // This will be filled by the analysis panel
-      imageUrl: data || '',
+      imageUrl: imageUrlOrNull || '',
       mode: mode,
       textInput: text
     });
@@ -165,7 +198,7 @@ export default function Home() {
     await saveGoals(user.id, newGoals);
     setShowGoalModal(false);
     toast({ title: 'Goals updated!', description: 'Your new targets have been saved.' });
-  }
+  };
 
   if (userLoading) {
     return <LoadingSpinner />;

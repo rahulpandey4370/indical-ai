@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
@@ -70,7 +69,7 @@ export function AnalysisPanel({
     setAnalysisError(null);
     try {
       const result = await analyzeIndianFoodImage({
-        photoDataUri: existingEntry.imageUrl,
+        photoDataUri: existingEntry.imageUrl, // This is now a URL, not base64
         textInput: existingEntry.textInput,
         mode: existingEntry.mode,
       });
@@ -131,9 +130,10 @@ export function AnalysisPanel({
     if (!analysisResult) return;
 
     startCommitTransition(async () => {
+      // Pass imagePreview which is now always a URL (never base64)
       const result = await commitToJourney(
         analysisResult,
-        imagePreview,
+        imagePreview, // This is a URL, safe to send
         new Date(existingEntry.timestamp),
         user.id,
         mealType,
@@ -331,5 +331,3 @@ export function AnalysisPanel({
     </div>
   );
 }
-
-    
