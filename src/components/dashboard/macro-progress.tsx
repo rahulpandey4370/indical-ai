@@ -1,6 +1,8 @@
 
 'use client';
 
+import { cn } from "@/lib/utils";
+
 interface MacroProgressProps {
   label: string;
   value: number;
@@ -24,7 +26,7 @@ export default function MacroProgress({
 
   return (
     <div className="space-y-3">
-        <div className="flex justify-between items-center text-[11px] font-black uppercase tracking-[0.15em]">
+        <div className={cn("flex justify-between items-center text-[11px] font-black uppercase tracking-[0.15em]", isOver && "text-red-300")}>
           <span className="opacity-80">{label}</span>
           <span>{Math.round(value)} / {goal}g</span>
         </div>

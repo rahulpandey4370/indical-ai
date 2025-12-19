@@ -1,3 +1,4 @@
+
 'use client';
 import { Card } from '@/components/ui/card';
 import MacroProgress from './macro-progress';
@@ -11,6 +12,7 @@ import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { cn } from '@/lib/utils';
 
 interface DailySummaryProps {
   selectedDate: Date;
@@ -57,6 +59,8 @@ export default function DailySummary({
     const { calories } = parseNutritionString(entry.analysis);
     return acc + calories;
   }, 0);
+  
+  const caloriesOver = goals.calories > 0 && totalCalories > goals.calories;
 
   return (
     <div className="w-full space-y-6 md:space-y-8">
@@ -119,7 +123,7 @@ export default function DailySummary({
           <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
               <div>
                   <h2 className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">Calories Consumed</h2>
-                  <div className="flex items-baseline gap-2">
+                  <div className={cn("flex items-baseline gap-2", caloriesOver && "text-red-300")}>
                       <span className="text-5xl md:text-6xl font-black tracking-tighter">{totalCalories.toLocaleString()}</span>
                       <span className="text-lg font-bold opacity-70">/ {goals.calories.toLocaleString()} kcal</span>
                   </div>
