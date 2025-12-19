@@ -8,7 +8,8 @@ export const MacroNutrientsSchema = z.object({
 
 export const AnalysisItemSchema = z.object({
   name: z.string().describe('Specific food item name (e.g., Masala Omelette).'),
-  weight_g: z.number().describe('Estimated weight of the item in grams.'),
+  weight: z.number().describe('Estimated weight or volume of the item.'),
+  unit: z.enum(['g', 'ml']).describe("Unit of measurement, either 'g' for grams or 'ml' for milliliters."),
   calories: z.number().describe('Estimated calories for the item.'),
   macros: MacroNutrientsSchema.describe('Macronutrient breakdown for the item.'),
 });

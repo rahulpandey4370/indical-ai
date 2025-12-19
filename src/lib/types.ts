@@ -9,7 +9,8 @@ export type MacroNutrients = {
 
 export type AnalysisItem = {
   name: string;
-  weight_g: number;
+  weight: number;
+  unit: 'g' | 'ml';
   calories: number;
   macros: MacroNutrients;
 };

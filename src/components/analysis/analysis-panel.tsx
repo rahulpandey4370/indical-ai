@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
@@ -201,11 +202,18 @@ export function AnalysisPanel({
               </div>
               
               <div className="p-8 bg-muted/50 dark:bg-slate-800/50 rounded-[44px] border border-border/50 shadow-inner animate-in slide-in-from-bottom-4 duration-700">
-                  <div className="flex items-baseline gap-3 mb-3">
-                    <span className="text-8xl font-black tracking-tighter text-primary leading-none">{analysisResult.total_calories}</span>
-                    <span className="text-xl font-black opacity-30 uppercase tracking-[0.1em]">Total Kcal</span>
+                  <div className="flex justify-between items-baseline">
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-8xl font-black tracking-tighter text-primary leading-none">{analysisResult.total_calories}</span>
+                      <span className="text-xl font-black opacity-30 uppercase tracking-[0.1em]">Total Kcal</span>
+                    </div>
+                    <div className='text-right text-sm font-bold text-muted-foreground'>
+                        <div>P: {analysisResult.total_macros.protein}g</div>
+                        <div>C: {analysisResult.total_macros.carbs}g</div>
+                        <div>F: {analysisResult.total_macros.fat}g</div>
+                    </div>
                   </div>
-                  <p className="text-sm opacity-50 leading-relaxed font-bold italic border-l-4 border-primary pl-4 py-1">
+                  <p className="text-sm opacity-50 leading-relaxed font-bold italic border-l-4 border-primary pl-4 py-1 mt-4">
                     "{analysisResult.summary}"
                   </p>
               </div>
@@ -222,21 +230,28 @@ export function AnalysisPanel({
                     {analysisResult.items.map((item, i) => (
                       <div 
                         key={i} 
-                        className="group flex justify-between items-center p-8 bg-card rounded-[38px] border border-border/50 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-in slide-in-from-right-4"
+                        className="group p-6 bg-card rounded-[38px] border border-border/50 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-in slide-in-from-right-4"
                         style={{ animationDelay: `${i * 100}ms` }}
                       >
-                        <div className="flex items-center gap-6">
-                          <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
-                            <Utensils size={24} />
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-6">
+                            <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                              <Utensils size={24} />
+                            </div>
+                            <div>
+                              <div className="font-black text-xl tracking-tight group-hover:text-primary transition-colors">{item.name}</div>
+                              <div className="text-[10px] font-black opacity-40 uppercase tracking-widest mt-1">{item.weight}{item.unit} Serving</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-black text-xl tracking-tight group-hover:text-primary transition-colors">{item.name}</div>
-                            <div className="text-[10px] font-black opacity-40 uppercase tracking-widest mt-1">{item.weight_g}g Serving</div>
+                          <div className="text-right">
+                            <div className="font-black text-3xl tracking-tighter text-foreground">{item.calories}</div>
+                            <div className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em]">Kcal</div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-black text-3xl tracking-tighter text-foreground">{item.calories}</div>
-                          <div className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em]">Kcal</div>
+                        <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-bold text-muted-foreground bg-muted/50 p-2 rounded-2xl">
+                            <div>P: {item.macros.protein}g</div>
+                            <div>C: {item.macros.carbs}g</div>
+                            <div>F: {item.macros.fat}g</div>
                         </div>
                       </div>
                     ))}
