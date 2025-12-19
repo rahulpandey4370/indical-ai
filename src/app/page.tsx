@@ -77,19 +77,11 @@ export default function Home() {
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, mode: 'meal' | 'barcode') => {
      if (event.target.files?.[0]) {
-      let file = event.target.files[0];
+      const file = event.target.files[0];
       setLoading(true);
       toast({ title: 'Processing image...', description: 'Please wait while we prepare your photo.' });
 
       try {
-        // Check if the file is HEIC/HEIF and convert it
-        if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
-          toast({ title: 'Converting HEIC image...', description: 'This may take a moment.' });
-          const heic2any = (await import('heic2any')).default;
-          const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg' });
-          file = new File([convertedBlob as Blob], file.name.replace(/\.heic$/, '.jpg'), { type: 'image/jpeg' });
-        }
-
         const reader = new FileReader();
         reader.onloadend = () => {
           const dataUri = reader.result as string;
@@ -271,9 +263,9 @@ export default function Home() {
       </Dialog>
 
       {/* Hidden file inputs */}
-      <input type="file" ref={fileInputRef} accept="image/*,.heic,.heif" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
-      <input type="file" ref={barcodeInputRef} accept="image/*,.heic,.heif" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'barcode')} />
-      <input type="file" ref={uploadInputRef} accept="image/*,.heic,.heif" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
+      <input type="file" ref={fileInputRef} accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
+      <input type="file" ref={barcodeInputRef} accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFileSelect(e, 'barcode')} />
+      <input type="file" ref={uploadInputRef} accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e, 'meal')} />
     </div>
   );
 }

@@ -32,37 +32,57 @@ const prompt = ai.definePrompt({
   })},
   output: {schema: AnalyzeIndianFoodImageOutputSchema},
   prompt: `
-    You are an expert Indian nutritionist. Analyze the provided input.
-    
-    {{#if isBarcodeMode}}
-      You are analyzing an image of a packaged food product barcode.
-      1. Identify the product name from the packaging.
-      2. Extract nutrition information per serving from the label.
-      Return strictly JSON using the provided output schema. Set food_type to "packaged".
-      Image: {{media url=photoDataUri}}
-    {{else if isMealMode}}
-      You are an expert Indian nutritionist analyzing a food image.
+    You are an expert Indian nutritionist. Your task is to analyze the provided input and return a detailed nutritional breakdown in JSON format.
+
+    {{#if isMealMode}}
+      You are analyzing a photo of a meal.
+      - Your primary goal is to identify every single food item in the image.
+      - For each item, provide its name, estimated weight in grams, estimated calories, and macronutrient breakdown (protein, carbs, fat).
+      - Sum up the totals for all items.
+      - Provide a confidence score between 0 and 1.
+      - Set 'food_type' to "prepared".
+      - Write a short, engaging summary of the items you identified.
       
       CRITICAL INSTRUCTION: You MUST break down the meal into its INDIVIDUAL separate items. 
-      DO NOT group them into a single entry like "Meal" or "Plate". 
-      For example, if you see a plate with an egg and a roti:
-      - Item 1: Fried Egg (approx 50g)
-      - Item 2: Roti (approx 35g)
+      DO NOT group them into a single entry like "Thali" or "Meal Plate". 
+      For example, if you see a plate with an egg curry, rice, and a roti:
+      - Item 1: Egg Curry (e.g., 2 eggs in gravy, approx 150g)
+      - Item 2: Steamed Rice (approx 100g)
+      - Item 3: Roti (approx 35g)
       
-      Every single piece of food must be its own object in the "items" array with its own estimated calories and macros based on standard Indian portion sizes.
-      Calculate the totals based on the individual items.
+      Every single distinct piece of food must be its own object in the "items" array with its own estimated calories and macros based on standard Indian portion sizes.
 
-      Return strictly JSON using the provided output schema. Set food_type to "prepared".
-      Image: {{media url=photoDataUri}}
+      Image to analyze:
+      {{media url=photoDataUri}}
+
+    {{else if isBarcodeMode}}
+      You are analyzing a photo of a packaged food product with a barcode.
+      - Identify the product name from the packaging.
+      - Extract all available nutrition information from the nutrition label.
+      - If a serving size is given, use that for the calculation. Otherwise, estimate a standard serving.
+      - Your response should contain only ONE item in the "items" array.
+      - Set 'food_type' to "packaged".
+      
+      Image to analyze:
+      {{media url=photoDataUri}}
+
     {{else if isTextMode}}
-      You are analyzing this meal description: "{{{textInput}}}".
+      You are analyzing a meal described in text.
+      - Your primary goal is to parse the text and identify every individual food item mentioned.
+      - For each item, provide its name, estimated weight, calories, and macros.
+      - Calculate the totals for all identified items.
+      - Set 'food_type' to "prepared".
+
+      CRITICAL INSTRUCTION: Break down the text into separate individual food items. 
+      For example, if the input is "2 rotis and an egg", you should create:
+      - Item 1: Roti (with quantity 2 reflected in the weight/calories)
+      - Item 2: Egg (with quantity 1)
       
-      CRITICAL: Break down the text into separate individual food items. 
-      Example: "2 rotis and an egg" -> Item 1: Roti (Quantity: 2), Item 2: Egg (Quantity: 1).
-      Calculate calories and macros for each item individually and then sum them for the totals.
-      
-      Return strictly JSON using the provided output schema. Set food_type to "prepared".
+      Text to analyze: "{{{textInput}}}"
+
     {{/if}}
+
+    You must ALWAYS return a valid JSON object that strictly follows the provided output schema. Do not include any extra text or explanations outside of the JSON structure.
   `,
 });
 
@@ -81,7 +101,7 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
       isTextMode: input.mode === 'text',
     });
     if (!output) {
-      throw new Error("Analysis failed to produce an output.");
+      throw new Error("An unexpected response was received from the server.");
     }
     return output;
   }
