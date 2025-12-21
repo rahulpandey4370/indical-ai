@@ -102,11 +102,9 @@ export function Nav() {
       <header className={`px-4 md:px-6 py-3 flex items-center justify-between border-b sticky top-0 z-50 backdrop-blur-xl bg-background/80 ${darkMode ? 'border-white/5' : 'border-slate-200/50'}`}>
         <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-3 group" prefetch={false}>
-                <div className="w-10 h-10 bg-gradient-to-br from-primary to-amber-600 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-md shadow-primary/20 group-hover:scale-105 transition-transform">
-                    <Image src="/logo.png" alt="IndiCal AI Logo" width={32} height={32} />
-                </div>
+                <Image src="/logo.png" alt="IndiCal AI Logo" width={48} height={48} className="rounded-xl border-2 border-border group-hover:scale-105 transition-transform" />
                 <div className="hidden sm:block">
-                    <h1 className="text-lg font-black tracking-tight">IndiCal AI</h1>
+                    <h1 className="text-2xl font-black tracking-tight">IndiCal AI</h1>
                 </div>
             </Link>
 
