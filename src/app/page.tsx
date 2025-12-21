@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -236,6 +237,7 @@ export default function Home() {
                 history={todayEntries}
                 onSelect={handleSelectEntry}
                 onDelete={handleDeleteEntry}
+                goals={goals}
               />
             )}
           </div>
