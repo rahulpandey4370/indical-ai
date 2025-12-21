@@ -1,4 +1,3 @@
-
 'use client';
 
 import { cn } from "@/lib/utils";
@@ -15,14 +14,21 @@ export default function MacroProgress({
   goal,
 }: MacroProgressProps) {
   const percentage = goal > 0 ? (value / goal) * 100 : 0;
-  const isOver = percentage > 100;
 
-  // Dynamic color: starts white, transitions to yellow as it nears 100%, turns red if over
-  const barColor = isOver
-    ? 'bg-red-400'
-    : percentage > 85
-    ? 'bg-yellow-300'
-    : 'bg-white';
+  const getBarColor = () => {
+    if (label === 'Protein') {
+      if (percentage > 150) return 'bg-red-400';
+      if (percentage >= 70) return 'bg-green-400';
+      return 'bg-yellow-400';
+    } else {
+      if (percentage > 100) return 'bg-red-400';
+      if (percentage >= 70) return 'bg-green-400';
+      return 'bg-yellow-400';
+    }
+  };
+
+  const isOver = label === 'Protein' ? percentage > 150 : percentage > 100;
+  const barColor = getBarColor();
 
   return (
     <div className="space-y-3">
@@ -32,7 +38,7 @@ export default function MacroProgress({
         </div>
         <div className="h-2.5 bg-black/10 rounded-full overflow-hidden p-0.5">
             <div 
-                className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(255,255,255,0.5)] ${barColor}`}
+                className={cn('h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(255,255,255,0.5)]', barColor)}
                 style={{width: `${Math.min(100, percentage)}%`}} 
             />
         </div>
