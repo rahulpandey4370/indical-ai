@@ -98,7 +98,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
                 <CardTitle className="font-black text-2xl tracking-tighter">{meal.type}</CardTitle>
               </div>
               <div className='flex items-center gap-2'>
-                <Button variant="outline" size="sm" onClick={() => handleAnalyzeMeal(meal.type, meal.entries)} disabled={meal.entries.length === 0}>
+                <Button variant="outline" size="sm" onClick={() => handleAnalyzeMeal(meal.type, meal.entries)} disabled={meal.entries.length === 0} className="hover:scale-105 active:scale-95 transition-transform duration-200">
                   <BrainCircuit size={16} className="mr-2"/> Analyze Meal
                 </Button>
                 <div className='text-right'>
@@ -248,3 +248,5 @@ const HistoryItem = ({entry, onSelect, onDelete}: {entry: HistoryEntry, onSelect
 }
 
 export default HistoryLog;
+
+    
