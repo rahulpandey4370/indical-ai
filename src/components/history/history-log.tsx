@@ -58,7 +58,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-1 pb-24 pt-8">
+    <div className="grid grid-cols-1 gap-8 px-1 pb-24 pt-8">
       {meals.map(meal => (
         <Card key={meal.type} className="rounded-[40px] shadow-lg border flex flex-col">
            <CardHeader className="flex-row items-center justify-between">
@@ -151,7 +151,7 @@ const HistoryItem = ({entry, onSelect, onDelete}: {entry: HistoryEntry, onSelect
             <Button
               variant="ghost"
               size="icon"
-              onClick={(e) => onDelete(entry.id)}
+              onClick={(e) => {e.stopPropagation(); onDelete(entry.id)}}
               className="rounded-lg h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
             >
               <Trash2 size={16} />
