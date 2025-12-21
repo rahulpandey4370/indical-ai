@@ -37,16 +37,15 @@ export const AnalyzeIndianFoodImageInputSchema = z.object({
 export const AnalyzeMealCompositionInputSchema = z.object({
   mealType: z.string().describe("The type of meal, e.g., 'Breakfast', 'Lunch'."),
   mealEntries: z.array(z.object({
-      analysis: z.object({
-        total_calories: z.number(),
-        total_macros: z.object({
-            protein: z.number(),
-            carbs: z.number(),
-            fat: z.number(),
-        }),
-        items: z.array(AnalysisItemSchema),
+      // This is a summarized version, not the full analysis
+      mealName: z.string().optional(),
+      total_calories: z.number(),
+      total_macros: z.object({
+          protein: z.number(),
+          carbs: z.number(),
+          fat: z.number(),
       }),
-  })).describe("The food entries for this specific meal."),
+  })).describe("A summarized list of food entries for this specific meal."),
   userGoals: z.object({
     calories: z.number(),
     protein: z.number(),
@@ -54,6 +53,7 @@ export const AnalyzeMealCompositionInputSchema = z.object({
     fat: z.number(),
   }).describe("The user's total daily nutritional goals."),
 });
+
 
 export const AnalyzeMealCompositionOutputSchema = z.object({
   title: z.string().describe("A catchy, encouraging title for the analysis (e.g., 'Protein-Packed Start!')."),

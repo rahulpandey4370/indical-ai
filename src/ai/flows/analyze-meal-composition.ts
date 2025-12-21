@@ -37,6 +37,7 @@ const prompt = ai.definePrompt({
     - Fat: {{{userGoals.fat}}}g
 
     Meal to Analyze ({{mealType}}):
+    This meal consists of the following logged items:
     {{{json mealEntries}}}
 
     Analysis Steps:

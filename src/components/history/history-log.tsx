@@ -21,7 +21,7 @@ interface HistoryLogProps {
 
 const mealOrder: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
-const MealTypeIcon = ({ type }: { type?: string }) => {
+const MealTypeIcon = ({ type }: { type?: MealType }) => {
   switch (type) {
     case 'Breakfast': return <Coffee size={20} className="text-amber-500" />;
     case 'Lunch': return <Sun size={20} className="text-orange-500" />;
@@ -51,9 +51,16 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
     setIsAnalyzing(true);
     setIsModalOpen(true);
     try {
+      // Create a summarized version of the entries to save tokens
+      const summarizedEntries = entries.map(entry => ({
+        mealName: entry.mealName || entry.analysis.summary,
+        total_calories: entry.analysis.total_calories,
+        total_macros: entry.analysis.total_macros
+      }));
+
       const result = await analyzeMealComposition({
         mealType,
-        mealEntries: entries,
+        mealEntries: summarizedEntries,
         userGoals: goals,
       });
       setAnalysisResult(result);
