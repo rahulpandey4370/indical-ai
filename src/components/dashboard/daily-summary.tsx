@@ -1,4 +1,3 @@
-
 'use client';
 import { Card } from '@/components/ui/card';
 import MacroProgress from './macro-progress';
@@ -123,7 +122,7 @@ export default function DailySummary({
           <div className="flex justify-between items-start mb-6 md:mb-8 relative z-10">
               <div>
                   <h2 className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1" style={{textShadow: '0 1px 2px rgba(0,0,0,0.2)'}}>Calories Consumed</h2>
-                  <div className={cn("flex items-baseline gap-2", caloriesOver && "text-red-300")} style={{textShadow: '0 2px 4px rgba(0,0,0,0.2)'}}>
+                  <div className={cn("flex items-baseline gap-2", caloriesOver && "text-red-200")} style={{textShadow: '0 2px 4px rgba(0,0,0,0.2)'}}>
                       <span className="text-5xl md:text-6xl font-black tracking-tighter">{totalCalories.toLocaleString()}</span>
                       <span className="text-lg font-bold opacity-70">/ {goals.calories.toLocaleString()} kcal</span>
                   </div>
