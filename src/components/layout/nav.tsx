@@ -104,7 +104,10 @@ export function Nav() {
             <Link href="/" className="flex items-center gap-3 group" prefetch={false}>
                 <Image src="/logo.png" alt="IndiCal AI Logo" width={48} height={48} className="rounded-xl border-2 border-border group-hover:scale-105 transition-transform" />
                 <div className="hidden sm:block">
-                    <h1 className="text-2xl font-black tracking-tight">IndiCal AI</h1>
+                    <h1 className="text-2xl font-black tracking-tighter" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                      <span className="bg-gradient-to-r from-primary via-orange-600 to-amber-500 bg-clip-text text-transparent">IndiCal</span>
+                      <span className="text-accent"> AI</span>
+                    </h1>
                 </div>
             </Link>
 
