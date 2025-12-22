@@ -1,20 +1,25 @@
-
 'use server';
 
-import {genkit, ModelReference, defineTool} from 'genkit';
+import {genkit, ModelReference} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
-import { gemini25Flash, gemini3Flash, gemini25FlashLite, gemma327b } from './models';
-import { z } from 'zod';
+import {z} from 'zod';
+import {ai} from './index';
 
-// Define the tool directly in this server-side file
-const googleSearchTool = defineTool(
+// --- Model Definitions ---
+const gemini25Flash = googleAI.model('gemini-2.5-flash');
+const gemini3Flash = googleAI.model('gemini-3.0-flash');
+const gemini25FlashLite = googleAI.model('gemini-2.5-flash-lite');
+const gemma327b = googleAI.model('gemma-3-27b');
+
+// Define the tool using the global 'ai' object
+const googleSearchTool = ai.defineTool(
   {
     name: 'googleSearch',
     description: 'Search Google for information.',
-    inputSchema: z.object({ query: z.string() }),
+    inputSchema: z.object({query: z.string()}),
     outputSchema: z.string(),
   },
-  async (input: { query: string }) => {
+  async (input: {query: string}) => {
     console.log(`[googleSearch] searching for "${input.query}"...`);
     const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
     const cx = process.env.GOOGLE_SEARCH_CX;
@@ -42,7 +47,6 @@ const googleSearchTool = defineTool(
   }
 );
 
-
 // Map model IDs to their references
 const modelMap: Record<string, ModelReference<any>> = {
   'gemini-2.5-flash': gemini25Flash,
@@ -51,15 +55,12 @@ const modelMap: Record<string, ModelReference<any>> = {
   'gemma-3-27b': gemma327b,
 };
 
-// This function dynamically creates the AI configuration based on a model ID
-// It is a server-side utility.
+// This function dynamically configures the global AI object based on a model ID
 export async function configureAi(modelId: string) {
   const model = modelMap[modelId] || gemini25Flash; // Fallback to default
 
-  return genkit({
-    plugins: [googleAI({
-      apiKey: process.env.GEMINI_API_KEY
-    })],
+  genkit({
+    plugins: [googleAI({apiKey: process.env.GEMINI_API_KEY})],
     model: model,
     tools: [googleSearchTool],
   });

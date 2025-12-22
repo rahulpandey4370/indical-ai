@@ -1,6 +1,7 @@
 
 'use server';
 import { configureAi } from '@/ai/genkit';
+import { ai } from '@/ai/index';
 import { z } from 'genkit';
 import { HistoryEntry, UserGoals, ChatMessage } from '@/lib/types'; // Assuming types are defined here
 
@@ -24,15 +25,17 @@ export async function getAssistantResponse(
   input: GetAssistantResponseInput,
   modelId: string,
 ): Promise<string> {
-  const flowResult = await getAssistantResponseFlow(input, modelId);
+  await configureAi(modelId);
+  const flowResult = await getAssistantResponseFlow(input);
   return flowResult;
 }
 
-const getAssistantResponseFlow = async (
-  input: GetAssistantResponseInput,
-  modelId: string,
-) => {
-  const ai = await configureAi(modelId);
+const getAssistantResponseFlow = ai.defineFlow({
+  name: 'getAssistantResponseFlow',
+  inputSchema: GetAssistantResponseInputSchema,
+  outputSchema: z.string(),
+},
+async (input) => {
   const todayMeals = input.history.filter(h => new Date(h.timestamp).toDateString() === input.currentDate);
   const totalCalories = todayMeals.reduce((acc, curr) => acc + curr.analysis.total_calories, 0);
 
@@ -42,12 +45,16 @@ const getAssistantResponseFlow = async (
     Keep your responses brief, informative, and encouraging.
   `;
 
-  const fullHistory = input.chatHistory.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n');
-  const fullPrompt = `${systemInstruction}\n\nChat History:\n${fullHistory}\nUser: ${input.userMessage}`;
+  const fullHistory = input.chatHistory.map(m => ({
+    role: m.role,
+    content: [{text: m.text}]
+  }));
 
   const llmResponse = await ai.generate({
-    prompt: fullPrompt,
+    history: fullHistory,
+    prompt: input.userMessage,
+    system: systemInstruction,
   });
   
   return llmResponse.text || "I'm not sure how to respond to that. Could you please rephrase?";
-};
+});

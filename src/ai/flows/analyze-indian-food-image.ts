@@ -9,6 +9,7 @@
  */
 
 import { configureAi } from '@/ai/genkit';
+import { ai } from '@/ai/index';
 import {z} from 'genkit';
 import { AnalyzeIndianFoodImageOutputSchema, AnalyzeIndianFoodImageInputSchema } from '@/lib/schemas';
 
@@ -19,16 +20,12 @@ export async function analyzeIndianFoodImage(
   input: AnalyzeIndianFoodImageInput,
   modelId: string,
 ): Promise<AnalyzeIndianFoodImageOutput> {
-  return analyzeIndianFoodImageFlow(input, modelId);
+  await configureAi(modelId);
+  return analyzeIndianFoodImageFlow(input);
 }
 
-const analyzeIndianFoodImageFlow = async (
-  input: AnalyzeIndianFoodImageInput,
-  modelId: string,
-) => {
-  const ai = await configureAi(modelId); // Configure AI with the selected model ID
 
-  const prompt = await ai.definePrompt({
+const analyzeIndianFoodImagePrompt = ai.definePrompt({
     name: 'analyzeIndianFoodImagePrompt',
     input: {schema: z.object({
       photoDataUri: z.string().optional(),
@@ -81,16 +78,24 @@ const analyzeIndianFoodImageFlow = async (
       You must ALWAYS return a valid JSON object that strictly follows the provided output schema. Do not include any extra text or explanations outside of the JSON structure.
     `,
   });
-  
-  const {output} = await prompt({
-    photoDataUri: input.photoDataUri,
-    textInput: input.textInput,
-    isMealMode: input.mode === 'meal',
-    isBarcodeMode: input.mode === 'barcode',
-    isTextMode: input.mode === 'text',
-  });
-  if (!output) {
-    throw new Error("An unexpected response was received from the server.");
+
+const analyzeIndianFoodImageFlow = ai.defineFlow(
+  {
+    name: 'analyzeIndianFoodImageFlow',
+    inputSchema: AnalyzeIndianFoodImageInputSchema,
+    outputSchema: AnalyzeIndianFoodImageOutputSchema,
+  },
+  async (input) => {
+    const {output} = await analyzeIndianFoodImagePrompt({
+      photoDataUri: input.photoDataUri,
+      textInput: input.textInput,
+      isMealMode: input.mode === 'meal',
+      isBarcodeMode: input.mode === 'barcode',
+      isTextMode: input.mode === 'text',
+    });
+    if (!output) {
+      throw new Error("An unexpected response was received from the server.");
+    }
+    return output;
   }
-  return output;
-};
+);

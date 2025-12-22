@@ -5,6 +5,7 @@
  */
 
 import { configureAi } from '@/ai/genkit';
+import { ai } from '@/ai/index';
 import { z } from 'genkit';
 import { HistoryEntry, UserGoals } from '@/lib/types';
 import { AnalysisItemSchema } from '@/lib/schemas';
@@ -68,17 +69,12 @@ export async function generateInsights(
   input: GenerateInsightsInput,
   modelId: string,
 ): Promise<GenerateInsightsOutput> {
-  return generateInsightsFlow(input, modelId);
+  await configureAi(modelId);
+  return generateInsightsFlow(input);
 }
 
 
-const generateInsightsFlow = async (
-  input: GenerateInsightsInput,
-  modelId: string,
-) => {
-  const ai = await configureAi(modelId);
-
-  const prompt = await ai.definePrompt({
+const generateInsightsPrompt = ai.definePrompt({
     name: 'generateInsightsPrompt',
     input: { schema: GenerateInsightsInputSchema },
     output: { schema: GenerateInsightsOutputSchema },
@@ -128,9 +124,14 @@ const generateInsightsFlow = async (
     `,
   });
 
-  const { output } = await prompt(input);
+const generateInsightsFlow = ai.defineFlow({
+    name: 'generateInsightsFlow',
+    inputSchema: GenerateInsightsInputSchema,
+    outputSchema: GenerateInsightsOutputSchema,
+}, async (input) => {
+  const { output } = await generateInsightsPrompt(input);
   if (!output) {
     throw new Error("Insight generation failed to produce an output.");
   }
   return output;
-};
+});

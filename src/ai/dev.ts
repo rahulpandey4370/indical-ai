@@ -1,10 +1,9 @@
-
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/analyze-indian-food-image.ts';
-import '@/ai/flows/refine-nutritional-analysis.ts';
-import '@/ai/flows/get-assistant-response.ts';
-import '@/ai/flows/generate-insights-flow.ts';
-import '@/ai/flows/analyze-meal-composition.ts';
-import '@/ai/genkit';
+import './index'; // Import the new index to configure genkit
+import './flows/analyze-indian-food-image.ts';
+import './flows/refine-nutritional-analysis.ts';
+import './flows/get-assistant-response.ts';
+import './flows/generate-insights-flow.ts';
+import './flows/analyze-meal-composition.ts';

@@ -10,6 +10,7 @@
  */
 
 import { configureAi } from '@/ai/genkit';
+import { ai } from '@/ai/index';
 import {z} from 'genkit';
 import { AnalyzeIndianFoodImageOutputSchema as NutritionalAnalysisSchema } from '@/lib/schemas';
 
@@ -33,17 +34,11 @@ export async function refineNutritionalAnalysis(
   input: RefineNutritionalAnalysisInput,
   modelId: string,
 ): Promise<RefineNutritionalAnalysisOutput> {
-  return refineNutritionalAnalysisFlow(input, modelId);
+  await configureAi(modelId);
+  return refineNutritionalAnalysisFlow(input);
 }
 
-const refineNutritionalAnalysisFlow = async (
-  input: RefineNutritionalAnalysisInput,
-  modelId: string,
-) => {
-
-  const ai = await configureAi(modelId);
-
-  const prompt = await ai.definePrompt({
+const refineNutritionalAnalysisPrompt = ai.definePrompt({
     name: 'refineNutritionalAnalysisPrompt',
     input: {schema: RefineNutritionalAnalysisInputSchema},
     output: {schema: RefineNutritionalAnalysisOutputSchema},
@@ -73,9 +68,17 @@ const refineNutritionalAnalysisFlow = async (
     `,
   });
 
-  const {output} = await prompt(input);
-  if (!output) {
-    throw new Error("Refinement failed to produce an output.");
+const refineNutritionalAnalysisFlow = ai.defineFlow(
+  {
+    name: 'refineNutritionalAnalysisFlow',
+    inputSchema: RefineNutritionalAnalysisInputSchema,
+    outputSchema: RefineNutritionalAnalysisOutputSchema,
+  },
+  async (input) => {
+    const {output} = await refineNutritionalAnalysisPrompt(input);
+    if (!output) {
+      throw new Error("Refinement failed to produce an output.");
+    }
+    return output;
   }
-  return output;
-};
+);

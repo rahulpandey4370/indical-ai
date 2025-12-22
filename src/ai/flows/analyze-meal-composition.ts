@@ -9,6 +9,7 @@
  */
 
 import { configureAi } from '@/ai/genkit';
+import { ai } from '@/ai/index';
 import { z } from 'genkit';
 import { AnalyzeMealCompositionInputSchema, AnalyzeMealCompositionOutputSchema } from '@/lib/schemas';
 
@@ -19,16 +20,11 @@ export async function analyzeMealComposition(
   input: AnalyzeMealCompositionInput,
   modelId: string,
 ): Promise<AnalyzeMealCompositionOutput> {
-  return analyzeMealCompositionFlow(input, modelId);
+  await configureAi(modelId);
+  return analyzeMealCompositionFlow(input);
 }
 
-const analyzeMealCompositionFlow = async (
-  input: AnalyzeMealCompositionInput,
-  modelId: string,
-) => {
-  const ai = await configureAi(modelId);
-
-  const prompt = await ai.definePrompt({
+const analyzeMealCompositionPrompt = ai.definePrompt({
     name: 'analyzeMealCompositionPrompt',
     input: { schema: AnalyzeMealCompositionInputSchema },
     output: { schema: AnalyzeMealCompositionOutputSchema },
@@ -58,9 +54,14 @@ const analyzeMealCompositionFlow = async (
     `,
   });
 
-  const { output } = await prompt(input);
+const analyzeMealCompositionFlow = ai.defineFlow({
+    name: 'analyzeMealCompositionFlow',
+    inputSchema: AnalyzeMealCompositionInputSchema,
+    outputSchema: AnalyzeMealCompositionOutputSchema,
+}, async (input) => {
+  const { output } = await analyzeMealCompositionPrompt(input);
   if (!output) {
     throw new Error("Meal composition analysis failed to produce an output.");
   }
   return output;
-};
+});
