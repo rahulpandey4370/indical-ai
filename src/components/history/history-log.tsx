@@ -2,12 +2,12 @@
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
-import { HistoryEntry, MealType, UserGoals } from '@/lib/types';
-import { Check, Trash2, ChevronRight, Utensils, Coffee, Sun, Moon, Cookie, BrainCircuit, Sparkles, Star, Award, TrendingDown, Target, Loader2 } from 'lucide-react';
+import { HistoryEntry, MealType, UserGoals, AnalyzeMealCompositionOutput } from '@/lib/types';
+import { Trash2, ChevronRight, Utensils, Coffee, Sun, Moon, Cookie, BrainCircuit, Sparkles, Star, Award, TrendingDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseNutritionString } from '@/lib/utils';
-import { analyzeMealComposition, AnalyzeMealCompositionOutput } from '@/ai/flows/analyze-meal-composition';
+import { analyzeMealComposition } from '@/ai/flows/analyze-meal-composition';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +31,67 @@ const MealTypeIcon = ({ type }: { type?: MealType }) => {
   }
 };
 
+export const AnalysisModal = ({ 
+  isOpen, setIsOpen, isAnalyzing, analysisResult, setAnalysisResult, title, description 
+}: {
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  isAnalyzing: boolean;
+  analysisResult: AnalyzeMealCompositionOutput | null;
+  setAnalysisResult: (result: AnalyzeMealCompositionOutput | null) => void;
+  title: string;
+  description: string;
+}) => {
+  return (
+     <Dialog open={isOpen} onOpenChange={(isOpen) => {
+        setIsOpen(isOpen);
+        if (!isOpen) setAnalysisResult(null);
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <Sparkles className="text-primary"/>
+              {title}
+            </DialogTitle>
+             <DialogDescription>
+                {description}
+             </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-6">
+            {isAnalyzing && <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin text-primary" size={32}/></div>}
+            {analysisResult && (
+              <div className="space-y-4 animate-in fade-in-50">
+                 <div className="text-center bg-muted p-6 rounded-2xl">
+                    <p className="font-extrabold text-2xl text-primary">{analysisResult.title}</p>
+                    <p className="text-muted-foreground font-semibold mt-1">{analysisResult.overallAssessment}</p>
+                    <Badge variant="outline" className="mt-4 text-lg font-bold py-1 px-4">
+                       Rating: {analysisResult.mealRating}/10 <Star size={16} className="ml-2 text-yellow-400"/>
+                    </Badge>
+                 </div>
+                 
+                 <div className="space-y-4">
+                    <div>
+                      <h4 className="font-bold flex items-center gap-2 mb-2"><Award className="text-green-500"/> What Went Well</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2">
+                        {analysisResult.whatWentWell.map((item, i) => <li key={i}>{item}</li>)}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 className="font-bold flex items-center gap-2 mb-2"><TrendingDown className="text-red-500"/> Areas for Improvement</h4>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2">
+                        {analysisResult.areasForImprovement.map((item, i) => <li key={i}>{item}</li>)}
+                      </ul>
+                    </div>
+                 </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+  )
+}
+
 const HistoryLog: React.FC<HistoryLogProps> = ({
   history,
   onSelect,
@@ -41,6 +102,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
   const [analysisResult, setAnalysisResult] = useState<AnalyzeMealCompositionOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentMealType, setCurrentMealType] = useState<MealType | null>(null);
 
 
   const handleAnalyzeMeal = async (mealType: MealType, entries: HistoryEntry[]) => {
@@ -50,6 +112,8 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
     }
     setIsAnalyzing(true);
     setIsModalOpen(true);
+    setCurrentMealType(mealType);
+    setAnalysisResult(null);
     try {
       // Create a summarized version of the entries to save tokens
       const summarizedEntries = entries.map(entry => ({
@@ -131,70 +195,21 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
         </Card>
       ))}
 
-      <Dialog open={isModalOpen} onOpenChange={(isOpen) => {
-        setIsModalOpen(isOpen);
-        if (!isOpen) setAnalysisResult(null);
-      }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
-              <Sparkles className="text-primary"/>
-              AI Meal Analysis
-            </DialogTitle>
-             <DialogDescription>
-                Here's a breakdown of your recent meal.
-             </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-6">
-            {isAnalyzing && <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin text-primary" size={32}/></div>}
-            {analysisResult && (
-              <div className="space-y-4 animate-in fade-in-50">
-                 <div className="text-center bg-muted p-6 rounded-2xl">
-                    <p className="font-extrabold text-2xl text-primary">{analysisResult.title}</p>
-                    <p className="text-muted-foreground font-semibold mt-1">{analysisResult.overallAssessment}</p>
-                    <Badge variant="outline" className="mt-4 text-lg font-bold py-1 px-4">
-                       Rating: {analysisResult.mealRating}/10 <Star size={16} className="ml-2 text-yellow-400"/>
-                    </Badge>
-                 </div>
-                 
-                 <div className="space-y-4">
-                    <div>
-                      <h4 className="font-bold flex items-center gap-2 mb-2"><Award className="text-green-500"/> What Went Well</h4>
-                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2">
-                        {analysisResult.whatWentWell.map((item, i) => <li key={i}>{item}</li>)}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h4 className="font-bold flex items-center gap-2 mb-2"><TrendingDown className="text-red-500"/> Areas for Improvement</h4>
-                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2">
-                        {analysisResult.areasForImprovement.map((item, i) => <li key={i}>{item}</li>)}
-                      </ul>
-                    </div>
-                 </div>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AnalysisModal 
+        isOpen={isModalOpen && !isAnalyzing && !!analysisResult}
+        setIsOpen={setIsModalOpen}
+        isAnalyzing={isAnalyzing}
+        analysisResult={analysisResult}
+        setAnalysisResult={setAnalysisResult}
+        title={`${currentMealType} Analysis`}
+        description={`Here's a breakdown of your ${currentMealType?.toLowerCase()}.`}
+      />
     </div>
   );
 };
 
 
 const HistoryItem = ({entry, onSelect, onDelete}: {entry: HistoryEntry, onSelect: (e:HistoryEntry) => void, onDelete: (id: string) => void}) => {
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  const handleCopy = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const itemsList = entry.analysis.items.map(i => `${i.name} (${i.weight}${i.unit})`).join(', ');
-    const textToCopy = `IndiCal AI Log:\nMeal: ${itemsList}\nTotal: ${entry.analysis.total_calories} kcal\nDate: ${new Date(entry.timestamp).toLocaleString()}`;
-
-    navigator.clipboard.writeText(textToCopy).then(() => {
-      setCopiedId(entry.id);
-      setTimeout(() => setCopiedId(null), 2000);
-    });
-  };
 
   return (
      <div

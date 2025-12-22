@@ -1,10 +1,11 @@
+
 'use client';
 import { Card } from '@/components/ui/card';
 import MacroProgress from './macro-progress';
-import { HistoryEntry, UserGoals } from '@/lib/types';
+import { HistoryEntry, UserGoals, AnalyzeMealCompositionOutput } from '@/lib/types';
 import { parseNutritionString } from '@/lib/utils';
 import { addDays, format, isSameDay, subDays, startOfWeek } from 'date-fns';
-import { Sparkles, Target, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { Sparkles, Target, ChevronLeft, ChevronRight, Calendar as CalendarIcon, BrainCircuit, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
@@ -12,6 +13,11 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import { generateInsights, GenerateInsightsOutput } from '@/ai/flows/generate-insights-flow';
+import { useToast } from '@/hooks/use-toast';
+import { AnalysisModal } from '../history/history-log';
+import { analyzeMealComposition } from '@/ai/flows/analyze-meal-composition';
 
 interface DailySummaryProps {
   selectedDate: Date;
@@ -28,6 +34,10 @@ export default function DailySummary({
   goals,
   onGoalsClick,
 }: DailySummaryProps) {
+  const { toast } = useToast();
+  const [analysisResult, setAnalysisResult] = useState<AnalyzeMealCompositionOutput | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 }); // Sunday
 
@@ -40,6 +50,40 @@ export default function DailySummary({
   const handleNextWeek = () => {
     onDateChange(addDays(selectedDate, 7));
   };
+
+  const handleAnalyzeDay = async () => {
+    if (entries.length === 0) {
+      toast({ title: 'No entries to analyze for this day.', variant: 'destructive' });
+      return;
+    }
+    setIsAnalyzing(true);
+    setIsModalOpen(true);
+    setAnalysisResult(null);
+    try {
+      const summarizedEntries = entries.map(entry => ({
+        mealName: entry.mealName || entry.analysis.summary,
+        total_calories: entry.analysis.total_calories,
+        total_macros: entry.analysis.total_macros,
+        mealType: entry.mealType || 'Snack',
+      }));
+
+      // We can use the meal composition flow by pretending the whole day is one big "meal".
+      // This is a creative reuse of the existing flow.
+      const result = await analyzeMealComposition({
+        mealType: 'Entire Day', // Special type for this analysis
+        mealEntries: summarizedEntries,
+        userGoals: goals,
+      });
+
+      setAnalysisResult(result);
+    } catch (e: any) {
+      toast({ title: 'Day Analysis Failed', description: e.message, variant: 'destructive' });
+      setIsModalOpen(false);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
 
   const totalMacros = entries.reduce(
     (acc, entry) => {
@@ -127,9 +171,14 @@ export default function DailySummary({
                       <span className="text-lg font-bold opacity-70">/ {goals.calories.toLocaleString()} kcal</span>
                   </div>
               </div>
-              <button onClick={onGoalsClick} className="p-3 bg-white/20 backdrop-blur-xl rounded-2xl hover:bg-white/30 transition-all active:scale-90">
-                  <Target size={20}/>
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={handleAnalyzeDay} disabled={entries.length === 0} className="p-3 bg-white/20 backdrop-blur-xl rounded-2xl hover:bg-white/30 transition-all active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <BrainCircuit size={20}/>
+                </button>
+                <button onClick={onGoalsClick} className="p-3 bg-white/20 backdrop-blur-xl rounded-2xl hover:bg-white/30 transition-all active:scale-90">
+                    <Target size={20}/>
+                </button>
+              </div>
           </div>
           <div className="space-y-4 md:space-y-5 relative z-10">
             <MacroProgress label="Protein" value={totalMacros.protein} goal={goals.protein} />
@@ -137,6 +186,17 @@ export default function DailySummary({
             <MacroProgress label="Fat" value={totalMacros.fat} goal={goals.fat} />
           </div>
       </Card>
+      <AnalysisModal 
+        isOpen={isModalOpen}
+        setIsOpen={setIsModalOpen}
+        isAnalyzing={isAnalyzing}
+        analysisResult={analysisResult}
+        setAnalysisResult={setAnalysisResult}
+        title="Daily Analysis"
+        description="Here's a breakdown of your entire day."
+      />
     </div>
   );
 }
+
+    
