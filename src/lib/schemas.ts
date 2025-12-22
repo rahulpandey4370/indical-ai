@@ -20,7 +20,7 @@ export const AnalyzeIndianFoodImageOutputSchema = z.object({
   total_macros: MacroNutrientsSchema.describe('Total macronutrients for the meal.'),
   confidence_score: z.number().min(0).max(1).describe('A score from 0 to 1 indicating the AI\'s confidence in the analysis.'),
   food_type: z.enum(['prepared', 'packaged']).describe('Type of food.'),
-  summary: z.string().describe('A short, engaging summary of all items found.'),
+  summary: z.string().describe('A short, engaging summary of all items found. Should be 2-3 words, max 5.'),
 });
 
 export const AnalyzeIndianFoodImageInputSchema = z.object({
@@ -53,11 +53,17 @@ export const AnalyzeMealCompositionInputSchema = z.object({
   }).describe("The user's total daily nutritional goals."),
 });
 
+const NutrientDetailSchema = z.object({
+  name: z.string().describe("Name of the nutrient (e.g., 'Calories', 'Protein', 'Vitamin C')."),
+  value: z.number().describe("The amount of the nutrient."),
+  unit: z.string().describe("The unit of measurement (e.g., 'kcal', 'g', 'mg').")
+});
 
 export const AnalyzeMealCompositionOutputSchema = z.object({
   title: z.string().describe("A catchy, encouraging title for the analysis (e.g., 'Protein-Packed Start!')."),
   overallAssessment: z.string().describe("A brief, one-sentence overall assessment of the meal."),
-  whatWentWell: z.array(z.string()).describe("A list of 2-3 positive points about the meal composition."),
-  areasForImprovement: z.array(z.string()).describe("A list of 2-3 actionable suggestions for improvement."),
+  whatWentWell: z.array(z.string()).describe("A list of 2-3 positive points about the meal composition. This must be populated."),
+  areasForImprovement: z.array(z.string()).describe("A list of 2-3 actionable suggestions for improvement. This must be populated."),
   mealRating: z.number().min(1).max(10).describe("An overall rating for the meal from 1 to 10 based on its nutritional balance relative to the meal type."),
+  detailedNutrients: z.array(NutrientDetailSchema).describe("A detailed list of macro and micro nutrients.")
 });

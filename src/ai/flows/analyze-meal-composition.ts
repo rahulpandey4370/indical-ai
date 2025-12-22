@@ -26,7 +26,7 @@ const prompt = ai.definePrompt({
   input: { schema: AnalyzeMealCompositionInputSchema },
   output: { schema: AnalyzeMealCompositionOutputSchema },
   prompt: `
-    You are an expert Indian nutritionist. Your task is to analyze a single meal's composition and provide clear, actionable feedback.
+    You are an expert Indian nutritionist. Your task is to analyze a single meal's composition and provide clear, actionable feedback, including a detailed nutrient breakdown.
     The user's total daily goals are provided for context, but your primary focus is on the quality and balance of THIS specific meal, considering it's a {{mealType}}.
     A typical Indian {{mealType}} should be balanced. For example, breakfast should have a good amount of protein, lunch should be substantial and balanced, and dinner should be lighter.
 
@@ -41,11 +41,13 @@ const prompt = ai.definePrompt({
     {{{json mealEntries}}}
 
     Analysis Steps:
-    1.  **Assess Balance**: Evaluate the macronutrient distribution for a {{mealType}}. Is it protein-heavy? Carb-dominant? Is there a good mix of nutrients?
-    2.  **Identify Positives**: Find what's good. Did they include a protein source? Are there vegetables? Acknowledge this in 'whatWentWell'. You MUST provide at least one positive point.
-    3.  **Identify Weaknesses**: Where can it be improved? Is it too high in fat for dinner? Lacking protein for a post-workout meal? Note this in 'areasForImprovement'. Be specific (e.g., "Consider adding a source of protein like paneer or dal to your lunch."). You MUST provide at least one area for improvement.
-    4.  **Rate the Meal**: Give a rating from 1-10 on how well-balanced this meal is for a {{mealType}}.
-    5.  **Generate Output**: Create a concise and encouraging JSON response that adheres to the schema.
+    1.  **Calculate Totals**: Sum up the total calories, protein, carbs, and fat for the entire meal from the entries provided.
+    2.  **Estimate Micronutrients**: Based on the items in the meal, provide a reasonable *estimate* for the following key micronutrients: Vitamin C (mg), Vitamin D (IU), Vitamin B12 (mcg), Iron (mg), and Magnesium (mg).
+    3.  **Assess Balance**: Evaluate the macronutrient distribution for a {{mealType}}. Is it protein-heavy? Carb-dominant? Is there a good mix of nutrients?
+    4.  **Identify Positives**: Find what's good about the meal. You MUST provide at least one positive point in 'whatWentWell'.
+    5.  **Identify Weaknesses**: Where can it be improved? You MUST provide at least one specific area for improvement in 'areasForImprovement'.
+    6.  **Rate the Meal**: Give a rating from 1-10 on how well-balanced this meal is for a {{mealType}}.
+    7.  **Generate Output**: Create a concise and encouraging JSON response. Populate the 'detailedNutrients' array with the total Calories, Protein, Carbs, Fat, and the estimated values for Vitamin C, Vitamin D, Vitamin B12, Iron, and Magnesium.
   `,
 });
 
@@ -63,5 +65,3 @@ const analyzeMealCompositionFlow = ai.defineFlow(
     return output;
   }
 );
-
-    

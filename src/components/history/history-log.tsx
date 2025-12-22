@@ -1,14 +1,14 @@
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
-import { HistoryEntry, MealType, UserGoals, AnalyzeMealCompositionOutput } from '@/lib/types';
-import { Trash2, ChevronRight, Utensils, Coffee, Sun, Moon, Cookie, BrainCircuit, Sparkles, Star, Award, TrendingDown, Loader2, X } from 'lucide-react';
+import { HistoryEntry, MealType, UserGoals, AnalyzeMealCompositionOutput, NutrientDetail } from '@/lib/types';
+import { Trash2, ChevronRight, Utensils, Coffee, Sun, Moon, Cookie, BrainCircuit, Sparkles, Star, Award, TrendingDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseNutritionString } from '@/lib/utils';
 import { analyzeMealComposition } from '@/ai/flows/analyze-meal-composition';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface HistoryLogProps {
   history: HistoryEntry[];
@@ -53,6 +54,9 @@ export const AnalysisModal = ({
   title: string;
   description: string;
 }) => {
+  const macros = analysisResult?.detailedNutrients.filter(n => ['Protein', 'Carbohydrates', 'Fat'].includes(n.name)) || [];
+  const micros = analysisResult?.detailedNutrients.filter(n => !['Calories', 'Protein', 'Carbohydrates', 'Fat'].includes(n.name)) || [];
+  
   return (
      <Dialog open={isOpen} onOpenChange={(isOpen) => {
         setIsOpen(isOpen);
@@ -72,19 +76,19 @@ export const AnalysisModal = ({
             <div className="px-6 pb-6 space-y-6">
               {isAnalyzing && <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin text-primary" size={32}/></div>}
               {analysisResult && (
-                <div className="space-y-4 animate-in fade-in-50">
-                   <div className="text-center bg-muted p-6 rounded-2xl">
+                <div className="space-y-6 animate-in fade-in-50">
+                   <div className="text-center bg-muted p-6 rounded-2xl border">
                       <p className="font-extrabold text-2xl text-primary">{analysisResult.title}</p>
-                      <p className="text-muted-foreground font-semibold mt-1">{analysisResult.overallAssessment}</p>
-                      <Badge variant="outline" className="mt-4 text-lg font-bold py-1 px-4">
-                         Rating: {analysisResult.mealRating}/10 <Star size={16} className="ml-2 text-yellow-400"/>
+                      <p className="text-muted-foreground font-semibold mt-1 text-sm">{analysisResult.overallAssessment}</p>
+                      <Badge variant="outline" className="mt-4 text-base font-bold py-1 px-4">
+                         Rating: {analysisResult.mealRating}/10 <Star size={14} className="ml-2 text-yellow-400 fill-yellow-400"/>
                       </Badge>
                    </div>
                    
-                   <div className="space-y-4">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {analysisResult.whatWentWell && analysisResult.whatWentWell.length > 0 && (
-                        <div>
-                          <h4 className="font-bold flex items-center gap-2 mb-2"><Award className="text-green-500"/> What Went Well</h4>
+                        <div className='space-y-2'>
+                          <h4 className="font-bold flex items-center gap-2"><Award className="text-green-500"/> What Went Well</h4>
                           <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2">
                             {analysisResult.whatWentWell.map((item, i) => <li key={i}>{item}</li>)}
                           </ul>
@@ -92,14 +96,35 @@ export const AnalysisModal = ({
                       )}
 
                       {analysisResult.areasForImprovement && analysisResult.areasForImprovement.length > 0 && (
-                        <div>
-                          <h4 className="font-bold flex items-center gap-2 mb-2"><TrendingDown className="text-red-500"/> Areas for Improvement</h4>
+                        <div className='space-y-2'>
+                          <h4 className="font-bold flex items-center gap-2"><TrendingDown className="text-red-500"/> Areas for Improvement</h4>
                           <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2">
                             {analysisResult.areasForImprovement.map((item, i) => <li key={i}>{item}</li>)}
                           </ul>
                         </div>
                       )}
                    </div>
+                  {analysisResult.detailedNutrients && analysisResult.detailedNutrients.length > 0 && (
+                    <div>
+                        <h4 className="font-bold text-lg mb-2">Nutritional Breakdown</h4>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Nutrient</TableHead>
+                              <TableHead className="text-right">Amount</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {analysisResult.detailedNutrients.map((nutrient) => (
+                              <TableRow key={nutrient.name}>
+                                <TableCell className="font-medium">{nutrient.name}</TableCell>
+                                <TableCell className="text-right">{nutrient.value.toFixed(1)} {nutrient.unit}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -300,5 +325,3 @@ const HistoryItem = ({entry, onSelect, onDelete}: {entry: HistoryEntry, onSelect
 }
 
 export default HistoryLog;
-
-    
