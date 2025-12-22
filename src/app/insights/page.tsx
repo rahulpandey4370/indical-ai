@@ -2,6 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useUser } from '@/hooks/use-user';
+import { useModel } from '@/hooks/use-model';
 import { getHistory, getGoals, saveGoals } from '@/lib/actions';
 import type { HistoryEntry, UserGoals, GenerateInsightsOutput, GenerateInsightsInput } from '@/lib/types';
 import { generateInsights } from '@/ai/flows/generate-insights-flow';
@@ -36,6 +37,7 @@ const DEFAULT_PLANNER_FORM: PlannerForm = {
 
 export default function InsightsPage() {
   const { user, loading: userLoading } = useUser();
+  const { model } = useModel();
   const { toast } = useToast();
   
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -83,7 +85,7 @@ export default function InsightsPage() {
             history: filteredHistory,
             goals,
             calculationRequest
-        });
+        }, model);
         setInsights(result);
         if(calculationRequest) setShowPlanner(false);
     } catch (e: any) {

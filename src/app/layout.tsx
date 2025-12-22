@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { UserProvider } from '@/hooks/use-user';
+import { ModelProvider } from '@/hooks/use-model';
 import { Nav } from '@/components/layout/nav';
 
 const APP_NAME = "IndiCal AI";
@@ -71,11 +72,13 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <UserProvider>
-          <div className="flex min-h-screen w-full flex-col">
-            <Nav />
-            {children}
-          </div>
-          <Toaster />
+          <ModelProvider>
+            <div className="flex min-h-screen w-full flex-col">
+              <Nav />
+              {children}
+            </div>
+            <Toaster />
+          </ModelProvider>
         </UserProvider>
       </body>
     </html>

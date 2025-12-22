@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
@@ -8,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseNutritionString } from '@/lib/utils';
 import { analyzeMealComposition } from '@/ai/flows/analyze-meal-composition';
 import { useToast } from '@/hooks/use-toast';
+import { useModel } from '@/hooks/use-model';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -141,6 +143,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
   goals
 }) => {
   const { toast } = useToast();
+  const { model } = useModel();
   const [analysisResult, setAnalysisResult] = useState<AnalyzeMealCompositionOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -163,12 +166,12 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
         total_macros: entry.analysis.total_macros,
         mealType: entry.mealType || 'Snack',
       }));
-
+      
       const result = await analyzeMealComposition({
         mealType,
         mealEntries: summarizedEntries,
         userGoals: goals,
-      });
+      }, model);
       setAnalysisResult(result);
     } catch (e: any) {
       toast({ title: 'Analysis Failed', description: e.message, variant: 'destructive' });

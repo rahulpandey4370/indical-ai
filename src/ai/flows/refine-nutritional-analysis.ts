@@ -9,7 +9,7 @@
  * RefineNutritionalAnalysisOutput - The return type for the refineNutritionalAnalysis function.
  */
 
-import {ai} from '@/ai/genkit';
+import { configureAi } from '@/ai/genkit';
 import {z} from 'genkit';
 import { AnalyzeIndianFoodImageOutputSchema as NutritionalAnalysisSchema } from '@/lib/schemas';
 
@@ -30,52 +30,52 @@ export type RefineNutritionalAnalysisOutput = z.infer<
 >;
 
 export async function refineNutritionalAnalysis(
-  input: RefineNutritionalAnalysisInput
+  input: RefineNutritionalAnalysisInput,
+  modelId: string,
 ): Promise<RefineNutritionalAnalysisOutput> {
-  return refineNutritionalAnalysisFlow(input);
+  return refineNutritionalAnalysisFlow(input, modelId);
 }
 
-const prompt = ai.definePrompt({
-  name: 'refineNutritionalAnalysisPrompt',
-  input: {schema: RefineNutritionalAnalysisInputSchema},
-  output: {schema: RefineNutritionalAnalysisOutputSchema},
-  prompt: `
-    You are a nutritional assistant. Your task is to refine a nutrition breakdown based on the user's feedback.
+const refineNutritionalAnalysisFlow = async (
+  input: RefineNutritionalAnalysisInput,
+  modelId: string,
+) => {
 
-    Here is the current analysis:
-    {{{json initialAnalysis}}}
+  const ai = await configureAi(modelId);
 
-    Here are the user's instructions for refinement:
-    "{{{refinementInstruction}}}"
+  const prompt = await ai.definePrompt({
+    name: 'refineNutritionalAnalysisPrompt',
+    input: {schema: RefineNutritionalAnalysisInputSchema},
+    output: {schema: RefineNutritionalAnalysisOutputSchema},
+    prompt: `
+      You are a nutritional assistant. Your task is to refine a nutrition breakdown based on the user's feedback.
 
-    Based on these instructions, you MUST update the JSON data. For example, if the user says "the portion of rice was smaller", you should reduce the weight_g, calories, and macros for the rice item and update the totals. If they say "that wasn't paneer, it was tofu", you must replace the paneer item with a tofu item, recalculating everything accordingly.
+      Here is the current analysis:
+      {{{json initialAnalysis}}}
 
-    Your response must be a valid JSON object that strictly follows this format:
-    {
-      "refinedAnalysis": { // The entire updated nutritional analysis object, with all totals recalculated.
-        "items": [...],
-        "total_calories": ...,
-        "total_macros": { ... },
-        "confidence_score": ...,
-        "food_type": "...",
-        "summary": "..."
-      },
-      "responseText": "A short, friendly message to the user confirming the changes you made. For example: 'I've adjusted the portion size for you!'"
-    }
-  `,
-});
+      Here are the user's instructions for refinement:
+      "{{{refinementInstruction}}}"
 
-const refineNutritionalAnalysisFlow = ai.defineFlow(
-  {
-    name: 'refineNutritionalAnalysisFlow',
-    inputSchema: RefineNutritionalAnalysisInputSchema,
-    outputSchema: RefineNutritionalAnalysisOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    if (!output) {
-      throw new Error("Refinement failed to produce an output.");
-    }
-    return output;
+      Based on these instructions, you MUST update the JSON data. For example, if the user says "the portion of rice was smaller", you should reduce the weight_g, calories, and macros for the rice item and update the totals. If they say "that wasn't paneer, it was tofu", you must replace the paneer item with a tofu item, recalculating everything accordingly.
+
+      Your response must be a valid JSON object that strictly follows this format:
+      {
+        "refinedAnalysis": { // The entire updated nutritional analysis object, with all totals recalculated.
+          "items": [...],
+          "total_calories": ...,
+          "total_macros": { ... },
+          "confidence_score": ...,
+          "food_type": "...",
+          "summary": "..."
+        },
+        "responseText": "A short, friendly message to the user confirming the changes you made. For example: 'I've adjusted the portion size for you!'"
+      }
+    `,
+  });
+
+  const {output} = await prompt(input);
+  if (!output) {
+    throw new Error("Refinement failed to produce an output.");
   }
-);
+  return output;
+};

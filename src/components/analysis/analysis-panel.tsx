@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition, useEffect, useRef } from 'react';
@@ -17,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { NutritionalChart } from './nutritional-chart';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
+import { useModel } from '@/hooks/use-model'; // Import the new hook
 import { Utensils } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,6 +34,7 @@ export function AnalysisPanel({
   existingEntry: HistoryEntry;
 }) {
   const { user } = useUser();
+  const { model } = useModel(); // Get model utility
   const [imagePreview, setImagePreview] = useState<string | null>(
     existingEntry?.imageUrl || null
   );
@@ -77,7 +80,7 @@ export function AnalysisPanel({
         photoDataUri: existingEntry.imageUrl, // This is now a URL, not base64
         textInput: existingEntry.textInput,
         mode: existingEntry.mode,
-      });
+      }, model);
       setAnalysisResult(result);
       if (!mealName && existingEntry.mode === 'text' && result.items.length === 1) {
         setMealName(result.items[0].name);
@@ -110,7 +113,7 @@ export function AnalysisPanel({
       const response = await refineNutritionalAnalysis({
         initialAnalysis: analysisResult,
         refinementInstruction: userMsg.text,
-      });
+      }, model);
       if (response.refinedAnalysis) {
         setAnalysisResult(response.refinedAnalysis);
       }

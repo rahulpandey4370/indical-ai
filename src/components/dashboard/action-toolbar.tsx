@@ -1,15 +1,18 @@
-
 'use client';
 
-import { Camera, Type, Upload, ScanBarcode } from 'lucide-react';
+import { Camera, Type, Upload, ScanBarcode, MoreVertical } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useModel } from '@/hooks/use-model';
 
 interface ActionToolbarProps {
   onAddMeal: (mode: 'meal' | 'barcode' | 'upload' | 'text') => void;
 }
 
 export function ActionToolbar({ onAddMeal }: ActionToolbarProps) {
+  const { model, setModel, availableModels } = useModel();
+
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-2 w-full max-w-xs sm:max-w-sm">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-2 w-full max-w-sm">
         <div className="bg-card/80 dark:bg-slate-900/80 backdrop-blur-xl p-2 rounded-full shadow-2xl flex items-center justify-around border border-border/50">
              <button onClick={() => onAddMeal('barcode')} className="text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10"><ScanBarcode size={18}/></button>
              <button onClick={() => onAddMeal('text')} className="text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10"><Type size={18}/></button>
@@ -20,6 +23,22 @@ export function ActionToolbar({ onAddMeal }: ActionToolbarProps) {
                <Camera size={22}/>
              </button>
              <button onClick={() => onAddMeal('upload')} className="text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10"><Upload size={18}/></button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10">
+                    <MoreVertical size={18}/>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="mb-2">
+                  <DropdownMenuRadioGroup value={model} onValueChange={setModel}>
+                    {availableModels.map((m) => (
+                      <DropdownMenuRadioItem key={m.id} value={m.id}>
+                        {m.name}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
         </div>
     </div>
   );

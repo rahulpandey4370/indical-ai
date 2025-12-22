@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
+import { useModel } from '@/hooks/use-model';
 import { getAssistantResponse } from '@/ai/flows/get-assistant-response';
 import { getHistory, getGoals } from '@/lib/actions';
 import { HistoryEntry, UserGoals, ChatMessage } from '@/lib/types';
@@ -38,6 +39,7 @@ export function Nav() {
   const [darkMode, setDarkMode] = useState(false);
   const { user } = useUser();
   const { toast } = useToast();
+  const { model } = useModel();
 
   // Assistant State
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -86,7 +88,7 @@ export function Nav() {
         goals: goals,
         chatHistory: currentChat.slice(0, -1),
         currentDate: new Date().toDateString()
-      });
+      }, model);
       setAssistantChat(prev => [...prev, { role: 'model', text: response }]);
     } catch(e: any) {
         setAssistantChat(prev => [...prev, { role: 'model', text: "Sorry, I'm having trouble connecting right now." }]);

@@ -1,3 +1,4 @@
+
 'use client';
 import { Card } from '@/components/ui/card';
 import MacroProgress from './macro-progress';
@@ -15,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { AnalysisModal } from '../history/history-log';
+import { useModel } from '@/hooks/use-model';
 import { analyzeMealComposition } from '@/ai/flows/analyze-meal-composition';
 import { PickersDay, PickersDayProps } from '@mui/x-date-pickers/PickersDay';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +61,7 @@ export default function DailySummary({
   allHistory,
 }: DailySummaryProps) {
   const { toast } = useToast();
+  const { model } = useModel();
   const [analysisResult, setAnalysisResult] = useState<AnalyzeMealCompositionOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -97,7 +100,7 @@ export default function DailySummary({
       const result: any = await generateInsights({
         history: entries,
         goals: goals,
-      });
+      }, model);
       
       // Adapt the output of generateInsights to what AnalysisModal expects
       const adaptedResult: AnalyzeMealCompositionOutput = {
@@ -105,7 +108,8 @@ export default function DailySummary({
           overallAssessment: result.calorieTrendAnalysis,
           whatWentWell: result.keyObservations.filter((obs: string) => !obs.toLowerCase().includes('low') && !obs.toLowerCase().includes('high')),
           areasForImprovement: result.keyObservations.filter((obs: string) => obs.toLowerCase().includes('low') || obs.toLowerCase().includes('high')),
-          mealRating: 5 // Default rating, generateInsights doesn't provide one
+          mealRating: 5, // Default rating, generateInsights doesn't provide one
+          detailedNutrients: [] // generateInsights doesn't provide this
       }
 
 

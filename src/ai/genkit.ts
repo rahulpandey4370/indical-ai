@@ -1,15 +1,27 @@
 
-import {genkit} from 'genkit';
+'use server';
+
+import {genkit, GenerationCommonConfig, ModelReference} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 import {googleSearchTool} from './tools/google-search';
+import { gemini25Flash, gemini3Flash } from './models';
 
-export const ai = genkit({
-  plugins: [googleAI({
-    apiKey: process.env.GEMINI_API_KEY
-  })],
-  model: 'googleai/gemini-2.5-flash',
-  tools: [googleSearchTool],
-});
+// Map model IDs to their references
+const modelMap: Record<string, ModelReference<any>> = {
+  'gemini-2.5-flash': gemini25Flash,
+  'gemini-3.0-flash': gemini3Flash,
+};
 
-// Define the tool using the initialized 'ai' object for export, but it's configured above.
-export const googleSearch = ai.defineTool(googleSearchTool);
+// This function dynamically creates the AI configuration based on a model ID
+// It is a server-side utility.
+export async function configureAi(modelId: string) {
+  const model = modelMap[modelId] || gemini25Flash; // Fallback to default
+
+  return genkit({
+    plugins: [googleAI({
+      apiKey: process.env.GEMINI_API_KEY
+    })],
+    model: model,
+    tools: [googleSearchTool],
+  });
+}
