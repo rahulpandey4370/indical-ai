@@ -37,6 +37,7 @@ const prompt = ai.definePrompt({
     CRITICAL INSTRUCTIONS FOR ALL MODES:
     - For each item, you MUST provide its name, estimated weight/volume, unit ('g' for solids, 'ml' for liquids), estimated calories, and a full macronutrient breakdown (protein, carbs, fat).
     - Always sum up the totals for all items.
+    - For the 'summary' field, you MUST generate a short, descriptive name for the meal, ideally 2-3 words, and a maximum of 5 words. (e.g., "Chicken Curry Lunch", "Morning Tea & Biscuits"). Do NOT write a long sentence.
 
     {{#if isMealMode}}
       You are analyzing a photo of a meal.
