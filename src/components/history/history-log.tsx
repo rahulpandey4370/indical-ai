@@ -10,6 +10,17 @@ import { parseNutritionString } from '@/lib/utils';
 import { analyzeMealComposition } from '@/ai/flows/analyze-meal-composition';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
 
 interface HistoryLogProps {
@@ -247,14 +258,32 @@ const HistoryItem = ({entry, onSelect, onDelete}: {entry: HistoryEntry, onSelect
           </div>
 
           <div className="flex gap-1 items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {e.stopPropagation(); onDelete(entry.id)}}
-              className="rounded-lg h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
-            >
-              <Trash2 size={16} />
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {e.stopPropagation();}}
+                  className="rounded-lg h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-300"
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete this meal log from your history.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(entry.id)} className="bg-destructive hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <div className="p-2 rounded-lg bg-primary/10 text-primary">
               <ChevronRight size={16} />
             </div>
@@ -264,5 +293,3 @@ const HistoryItem = ({entry, onSelect, onDelete}: {entry: HistoryEntry, onSelect
 }
 
 export default HistoryLog;
-
-    
