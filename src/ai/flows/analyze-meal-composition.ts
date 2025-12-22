@@ -42,10 +42,10 @@ const prompt = ai.definePrompt({
 
     Analysis Steps:
     1.  **Assess Balance**: Evaluate the macronutrient distribution for a {{mealType}}. Is it protein-heavy? Carb-dominant? Is there a good mix of nutrients?
-    2.  **Identify Positives**: Find what's good. Did they include a protein source? Are there vegetables? Acknowledge this in 'whatWentWell'.
-    3.  **Identify Weaknesses**: Where can it be improved? Is it too high in fat for dinner? Lacking protein for a post-workout meal? Note this in 'areasForImprovement'. Be specific (e.g., "Consider adding a source of protein like paneer or dal to your lunch.").
+    2.  **Identify Positives**: Find what's good. Did they include a protein source? Are there vegetables? Acknowledge this in 'whatWentWell'. You MUST provide at least one positive point.
+    3.  **Identify Weaknesses**: Where can it be improved? Is it too high in fat for dinner? Lacking protein for a post-workout meal? Note this in 'areasForImprovement'. Be specific (e.g., "Consider adding a source of protein like paneer or dal to your lunch."). You MUST provide at least one area for improvement.
     4.  **Rate the Meal**: Give a rating from 1-10 on how well-balanced this meal is for a {{mealType}}.
-    5.  **Generate Output**: Create a concise and encouraging JSON response.
+    5.  **Generate Output**: Create a concise and encouraging JSON response that adheres to the schema.
   `,
 });
 
@@ -63,3 +63,5 @@ const analyzeMealCompositionFlow = ai.defineFlow(
     return output;
   }
 );
+
+    

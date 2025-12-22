@@ -2,13 +2,13 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { HistoryEntry, MealType, UserGoals, AnalyzeMealCompositionOutput } from '@/lib/types';
-import { Trash2, ChevronRight, Utensils, Coffee, Sun, Moon, Cookie, BrainCircuit, Sparkles, Star, Award, TrendingDown, Loader2 } from 'lucide-react';
+import { Trash2, ChevronRight, Utensils, Coffee, Sun, Moon, Cookie, BrainCircuit, Sparkles, Star, Award, TrendingDown, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseNutritionString } from '@/lib/utils';
 import { analyzeMealComposition } from '@/ai/flows/analyze-meal-composition';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface HistoryLogProps {
   history: HistoryEntry[];
@@ -57,8 +58,8 @@ export const AnalysisModal = ({
         setIsOpen(isOpen);
         if (!isOpen) setAnalysisResult(null);
       }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-lg p-0">
+          <DialogHeader className="p-6">
             <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
               <Sparkles className="text-primary"/>
               {title}
@@ -67,36 +68,42 @@ export const AnalysisModal = ({
                 {description}
              </DialogDescription>
           </DialogHeader>
-          <div className="py-4 space-y-6">
-            {isAnalyzing && <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin text-primary" size={32}/></div>}
-            {analysisResult && (
-              <div className="space-y-4 animate-in fade-in-50">
-                 <div className="text-center bg-muted p-6 rounded-2xl">
-                    <p className="font-extrabold text-2xl text-primary">{analysisResult.title}</p>
-                    <p className="text-muted-foreground font-semibold mt-1">{analysisResult.overallAssessment}</p>
-                    <Badge variant="outline" className="mt-4 text-lg font-bold py-1 px-4">
-                       Rating: {analysisResult.mealRating}/10 <Star size={16} className="ml-2 text-yellow-400"/>
-                    </Badge>
-                 </div>
-                 
-                 <div className="space-y-4">
-                    <div>
-                      <h4 className="font-bold flex items-center gap-2 mb-2"><Award className="text-green-500"/> What Went Well</h4>
-                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2">
-                        {analysisResult.whatWentWell.map((item, i) => <li key={i}>{item}</li>)}
-                      </ul>
-                    </div>
+          <ScrollArea className="max-h-[70vh]">
+            <div className="px-6 pb-6 space-y-6">
+              {isAnalyzing && <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin text-primary" size={32}/></div>}
+              {analysisResult && (
+                <div className="space-y-4 animate-in fade-in-50">
+                   <div className="text-center bg-muted p-6 rounded-2xl">
+                      <p className="font-extrabold text-2xl text-primary">{analysisResult.title}</p>
+                      <p className="text-muted-foreground font-semibold mt-1">{analysisResult.overallAssessment}</p>
+                      <Badge variant="outline" className="mt-4 text-lg font-bold py-1 px-4">
+                         Rating: {analysisResult.mealRating}/10 <Star size={16} className="ml-2 text-yellow-400"/>
+                      </Badge>
+                   </div>
+                   
+                   <div className="space-y-4">
+                      {analysisResult.whatWentWell && analysisResult.whatWentWell.length > 0 && (
+                        <div>
+                          <h4 className="font-bold flex items-center gap-2 mb-2"><Award className="text-green-500"/> What Went Well</h4>
+                          <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2">
+                            {analysisResult.whatWentWell.map((item, i) => <li key={i}>{item}</li>)}
+                          </ul>
+                        </div>
+                      )}
 
-                    <div>
-                      <h4 className="font-bold flex items-center gap-2 mb-2"><TrendingDown className="text-red-500"/> Areas for Improvement</h4>
-                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2">
-                        {analysisResult.areasForImprovement.map((item, i) => <li key={i}>{item}</li>)}
-                      </ul>
-                    </div>
-                 </div>
-              </div>
-            )}
-          </div>
+                      {analysisResult.areasForImprovement && analysisResult.areasForImprovement.length > 0 && (
+                        <div>
+                          <h4 className="font-bold flex items-center gap-2 mb-2"><TrendingDown className="text-red-500"/> Areas for Improvement</h4>
+                          <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground pl-2">
+                            {analysisResult.areasForImprovement.map((item, i) => <li key={i}>{item}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                   </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
   )
@@ -293,3 +300,5 @@ const HistoryItem = ({entry, onSelect, onDelete}: {entry: HistoryEntry, onSelect
 }
 
 export default HistoryLog;
+
+    
