@@ -1,6 +1,6 @@
 
 'use client';
-import { Bot, Moon, Sun, Home, LineChart, Settings } from 'lucide-react';
+import { Bot, Moon, Sun, Home, LineChart, Settings, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -74,7 +74,10 @@ export function Nav() {
   }, [user, isAssistantOpen]);
 
   const handleAssistantSend = async () => {
-    if (!assistantInput.trim() || !user || !goals) return;
+    if (!assistantInput.trim() || !user || !goals) {
+       toast({ variant: 'destructive', title: "Cannot send message", description: "User data or goals are not loaded yet." });
+      return;
+    }
     
     const currentChat = [...assistantChat, { role: 'user' as const, text: assistantInput }];
     setAssistantChat(currentChat);
@@ -177,7 +180,7 @@ export function Nav() {
               <div className="relative flex items-center">
                 <Input type="text" value={assistantInput} onChange={(e) => setAssistantInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAssistantSend()} placeholder="Ask about macros..." className="pr-12" />
                 <Button onClick={handleAssistantSend} disabled={processingAssistant} size="icon" className="absolute right-2" variant="ghost">
-                  <Send size={20}/>
+                  {processingAssistant ? <Loader2 className="animate-spin" /> : <Send size={20}/>}
                 </Button>
               </div>
              </div>
