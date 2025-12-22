@@ -1,5 +1,8 @@
+
 'use client';
 import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
+import { getModelUsage, saveModelUsage } from '@/lib/actions';
+import { useUser } from './use-user';
 
 type ModelDefinition = {
   id: string;
@@ -26,54 +29,43 @@ interface ModelContextValue {
 const ModelContext = createContext<ModelContextValue | undefined>(undefined);
 
 export function ModelProvider({ children }: { children: ReactNode }) {
+  const { user } = useUser();
   const [model, setModel] = useState<string>(DEFAULT_MODEL_ID);
   const [isMounted, setIsMounted] = useState(false);
   const [modelUsage, setModelUsage] = useState<Record<string, number>>({});
   
-  const getStorageKey = () => {
-    const today = new Date().toISOString().split('T')[0];
-    return `indical_model_usage_${today}`;
-  }
-
   useEffect(() => {
     setIsMounted(true);
     const savedModel = localStorage.getItem('indical_model');
     if (savedModel && availableModels.some(m => m.id === savedModel)) {
       setModel(savedModel);
     }
-    
-    // Load today's usage
-    const usageKey = getStorageKey();
-    try {
-      const savedUsage = localStorage.getItem(usageKey);
-      if(savedUsage) {
-        setModelUsage(JSON.parse(savedUsage));
-      }
-    } catch (e) {
-      console.error("Failed to parse model usage from localStorage", e);
-      setModelUsage({});
-    }
-    
-    // Clear out old usage data
-    Object.keys(localStorage).forEach(key => {
-      if(key.startsWith('indical_model_usage_') && key !== usageKey) {
-        localStorage.removeItem(key);
-      }
-    });
-
   }, []);
+  
+  useEffect(() => {
+    if (user) {
+        getModelUsage(user.id, new Date()).then(usage => {
+            setModelUsage(usage || {});
+        }).catch(e => {
+            console.error("Failed to fetch model usage", e);
+            setModelUsage({});
+        });
+    }
+  }, [user]);
+
 
   const incrementModelUsage = useCallback((modelId: string) => {
-    setModelUsage(prev => {
-      const newUsage = { ...prev, [modelId]: (prev[modelId] || 0) + 1 };
-      try {
-        localStorage.setItem(getStorageKey(), JSON.stringify(newUsage));
-      } catch (e) {
-        console.error("Failed to save model usage to localStorage", e);
-      }
-      return newUsage;
+    if (!user) return;
+    
+    const newUsage = { ...modelUsage, [modelId]: (modelUsage[modelId] || 0) + 1 };
+    setModelUsage(newUsage);
+
+    // Debounce this call in a real app, but for now we save on every increment
+    saveModelUsage(user.id, new Date(), newUsage).catch(e => {
+        console.error("Failed to save model usage", e);
+        // Optionally revert state, but for this app we'll keep the optimistic update
     });
-  }, []);
+  }, [modelUsage, user]);
 
 
   useEffect(() => {
@@ -82,13 +74,9 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     }
   }, [model, isMounted]);
 
-  const setModelAndTrackUsage = (modelId: string) => {
-    setModel(modelId);
-  }
-
   const value = {
     model,
-    setModel: setModelAndTrackUsage,
+    setModel,
     availableModels,
     modelUsage,
     incrementModelUsage
@@ -102,11 +90,5 @@ export function useModel() {
   if (context === undefined) {
     throw new Error('useModel must be used within a ModelProvider');
   }
-  // This is a side-effect but it's the most reliable way to track usage
-  // without changing all the call-sites.
-  useEffect(() => {
-    context.incrementModelUsage(context.model);
-  }, [context.model]);
-  
   return context;
 }

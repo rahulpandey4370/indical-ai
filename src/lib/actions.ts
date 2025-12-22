@@ -7,6 +7,7 @@ import type { NutritionalAnalysis, HistoryEntry, UserGoals, MealType } from './t
 import { CosmosClient } from '@azure/cosmos';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
+import { format } from 'date-fns';
 
 
 // Azure Cosmos DB and Blob Storage Configuration
@@ -134,6 +135,41 @@ export async function saveGoals(userId: string, goals: UserGoals): Promise<{succ
         return { success: false };
     }
 }
+
+export async function getModelUsage(userId: string, date: Date): Promise<Record<string, number> | null> {
+    const dateString = format(date, 'yyyy-MM-dd');
+    const blobName = `${userId}/usage/${dateString}.json`;
+    const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
+
+    try {
+        const downloadBlockBlobResponse = await blockBlobClient.download(0);
+        const downloaded = await streamToBuffer(downloadBlockBlobResponse.readableStreamBody);
+        return JSON.parse(downloaded.toString());
+    } catch (error: any) {
+        if (error.statusCode === 404) {
+            return null; // No usage for this date yet
+        }
+        console.error('Failed to fetch model usage from Blob Storage', error);
+        return null;
+    }
+}
+
+export async function saveModelUsage(userId: string, date: Date, usage: Record<string, number>): Promise<{success: boolean}> {
+    const dateString = format(date, 'yyyy-MM-dd');
+    const blobName = `${userId}/usage/${dateString}.json`;
+    const blockBlobClient = blobContainerClient.getBlockBlobClient(blobName);
+    const data = JSON.stringify(usage);
+    try {
+        await blockBlobClient.upload(data, data.length, {
+            blobHTTPHeaders: { blobContentType: 'application/json' }
+        });
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to save model usage to Blob Storage', error);
+        return { success: false };
+    }
+}
+
 
 async function streamToBuffer(readableStream: NodeJS.ReadableStream | undefined): Promise<Buffer> {
     return new Promise((resolve, reject) => {
