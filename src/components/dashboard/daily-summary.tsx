@@ -18,6 +18,7 @@ import { AnalysisModal } from '../history/history-log';
 import { analyzeMealComposition } from '@/ai/flows/analyze-meal-composition';
 import { PickersDay, PickersDayProps } from '@mui/x-date-pickers/PickersDay';
 import { Badge } from '@/components/ui/badge';
+import { generateInsights } from '@/ai/flows/generate-insights-flow';
 
 interface DailySummaryProps {
   selectedDate: Date;
@@ -35,7 +36,7 @@ function ServerDay(props: PickersDayProps<dayjs.Dayjs> & { loggedDays?: number[]
 
   return (
     <div className="relative">
-      <PickersDay {...props} outsideCurrentMonth={outsideCurrentMonth} day={day} />
+      <PickersDay {...other} outsideCurrentMonth={outsideCurrentMonth} day={day} />
       {isLogged && (
          <Badge
           variant="destructive"
@@ -91,18 +92,24 @@ export default function DailySummary({
         mealName: entry.mealName || entry.analysis.summary,
         total_calories: entry.analysis.total_calories,
         total_macros: entry.analysis.total_macros,
-        mealType: entry.mealType || 'Snack',
       }));
 
-      // We can use the meal composition flow by pretending the whole day is one big "meal".
-      // This is a creative reuse of the existing flow.
-      const result = await analyzeMealComposition({
-        mealType: 'Entire Day', // Special type for this analysis
-        mealEntries: summarizedEntries,
-        userGoals: goals,
+      const result: any = await generateInsights({
+        history: entries,
+        goals: goals,
       });
+      
+      // Adapt the output of generateInsights to what AnalysisModal expects
+      const adaptedResult: AnalyzeMealCompositionOutput = {
+          title: "Daily Analysis",
+          overallAssessment: result.calorieTrendAnalysis,
+          whatWentWell: result.keyObservations.filter((obs: string) => !obs.toLowerCase().includes('low') && !obs.toLowerCase().includes('high')),
+          areasForImprovement: result.keyObservations.filter((obs: string) => obs.toLowerCase().includes('low') || obs.toLowerCase().includes('high')),
+          mealRating: 5 // Default rating, generateInsights doesn't provide one
+      }
 
-      setAnalysisResult(result);
+
+      setAnalysisResult(adaptedResult);
     } catch (e: any) {
       toast({ title: 'Day Analysis Failed', description: e.message, variant: 'destructive' });
       setIsModalOpen(false);
