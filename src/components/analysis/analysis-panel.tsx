@@ -34,7 +34,7 @@ export function AnalysisPanel({
   existingEntry: HistoryEntry;
 }) {
   const { user } = useUser();
-  const { model } = useModel(); // Get model utility
+  const { model, incrementModelUsage } = useModel(); // Get model utility
   const [imagePreview, setImagePreview] = useState<string | null>(
     existingEntry?.imageUrl || null
   );
@@ -75,6 +75,7 @@ export function AnalysisPanel({
     }
     setIsAnalyzing(true);
     setAnalysisError(null);
+    incrementModelUsage(model);
     try {
       const result = await analyzeIndianFoodImage({
         photoDataUri: existingEntry.imageUrl, // This is now a URL, not base64
@@ -108,7 +109,7 @@ export function AnalysisPanel({
     setChatMessages(prev => [...prev, userMsg]);
     setRefinementInput("");
     setIsRefining(true);
-
+    incrementModelUsage(model);
     try {
       const response = await refineNutritionalAnalysis({
         initialAnalysis: analysisResult,

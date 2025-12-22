@@ -44,9 +44,14 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     
     // Load today's usage
     const usageKey = getStorageKey();
-    const savedUsage = localStorage.getItem(usageKey);
-    if(savedUsage) {
-      setModelUsage(JSON.parse(savedUsage));
+    try {
+      const savedUsage = localStorage.getItem(usageKey);
+      if(savedUsage) {
+        setModelUsage(JSON.parse(savedUsage));
+      }
+    } catch (e) {
+      console.error("Failed to parse model usage from localStorage", e);
+      setModelUsage({});
     }
     
     // Clear out old usage data
@@ -61,7 +66,11 @@ export function ModelProvider({ children }: { children: ReactNode }) {
   const incrementModelUsage = useCallback((modelId: string) => {
     setModelUsage(prev => {
       const newUsage = { ...prev, [modelId]: (prev[modelId] || 0) + 1 };
-      localStorage.setItem(getStorageKey(), JSON.stringify(newUsage));
+      try {
+        localStorage.setItem(getStorageKey(), JSON.stringify(newUsage));
+      } catch (e) {
+        console.error("Failed to save model usage to localStorage", e);
+      }
       return newUsage;
     });
   }, []);
@@ -73,14 +82,13 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     }
   }, [model, isMounted]);
 
-  const setModelAndIncrement = (modelId: string) => {
+  const setModelAndTrackUsage = (modelId: string) => {
     setModel(modelId);
-    incrementModelUsage(modelId);
   }
 
   const value = {
     model,
-    setModel: setModelAndIncrement,
+    setModel: setModelAndTrackUsage,
     availableModels,
     modelUsage,
     incrementModelUsage
@@ -94,5 +102,11 @@ export function useModel() {
   if (context === undefined) {
     throw new Error('useModel must be used within a ModelProvider');
   }
+  // This is a side-effect but it's the most reliable way to track usage
+  // without changing all the call-sites.
+  useEffect(() => {
+    context.incrementModelUsage(context.model);
+  }, [context.model]);
+  
   return context;
 }

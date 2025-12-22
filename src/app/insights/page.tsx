@@ -37,7 +37,7 @@ const DEFAULT_PLANNER_FORM: PlannerForm = {
 
 export default function InsightsPage() {
   const { user, loading: userLoading } = useUser();
-  const { model } = useModel();
+  const { model, incrementModelUsage } = useModel();
   const { toast } = useToast();
   
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -74,6 +74,7 @@ export default function InsightsPage() {
 
     setInsightsLoading(true);
     setInsightsError(null);
+    incrementModelUsage(model);
     try {
         const filteredHistory = history.filter(entry => {
           const entryDate = new Date(entry.timestamp);

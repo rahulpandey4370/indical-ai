@@ -4,7 +4,7 @@ import { Bot, Moon, Sun, Home, LineChart, Settings, Loader2 } from 'lucide-react
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 import {
   Sheet,
@@ -39,7 +39,7 @@ export function Nav() {
   const [darkMode, setDarkMode] = useState(false);
   const { user } = useUser();
   const { toast } = useToast();
-  const { model } = useModel();
+  const { model, incrementModelUsage } = useModel();
 
   // Assistant State
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -91,7 +91,7 @@ export function Nav() {
     setAssistantChat(currentChat);
     setAssistantInput("");
     setProcessingAssistant(true);
-    
+    incrementModelUsage(model);
     try {
       // Pass only today's history to the assistant
       const today = new Date().toDateString();
