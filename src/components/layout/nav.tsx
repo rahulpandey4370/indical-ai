@@ -48,7 +48,7 @@ export function Nav() {
   const [processingAssistant, setProcessingAssistant] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [goals, setGoals] = useState<UserGoals | null>(null);
-  const assistantScrollRef = useRef<HTMLDivElement | null>(null);
+  const assistantScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('indical_theme');
@@ -64,17 +64,20 @@ export function Nav() {
   }, [darkMode]);
 
    useEffect(() => {
-    if (user && isAssistantOpen) {
+    if (user) {
       Promise.all([getHistory(user.id), getGoals(user.id)])
         .then(([userHistory, userGoals]) => {
           setHistory(userHistory);
           if (userGoals) setGoals(userGoals);
         })
     }
-  }, [user, isAssistantOpen]);
+  }, [user]);
 
   const handleAssistantSend = async () => {
-    if (!assistantInput.trim() || !user || !goals) {
+    if (!assistantInput.trim()) {
+      return;
+    }
+    if (!user || !goals) {
        toast({ variant: 'destructive', title: "Cannot send message", description: "User data or goals are not loaded yet." });
       return;
     }
