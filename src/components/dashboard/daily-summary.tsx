@@ -1,11 +1,10 @@
-
 'use client';
 import { Card } from '@/components/ui/card';
 import MacroProgress from './macro-progress';
 import { HistoryEntry, UserGoals, AnalyzeMealCompositionOutput } from '@/lib/types';
 import { parseNutritionString } from '@/lib/utils';
-import { addDays, format, isSameDay, subDays, startOfWeek } from 'date-fns';
-import { Sparkles, Target, ChevronLeft, ChevronRight, Calendar as CalendarIcon, BrainCircuit, Loader2 } from 'lucide-react';
+import { addDays, format, isSameDay, subDays, startOfWeek, isSameMonth, isToday } from 'date-fns';
+import { Sparkles, Target, ChevronLeft, ChevronRight, Calendar as CalendarIcon, BrainCircuit, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
@@ -14,10 +13,11 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
-import { generateInsights, GenerateInsightsOutput } from '@/ai/flows/generate-insights-flow';
 import { useToast } from '@/hooks/use-toast';
 import { AnalysisModal } from '../history/history-log';
 import { analyzeMealComposition } from '@/ai/flows/analyze-meal-composition';
+import { PickersDay, PickersDayProps } from '@mui/x-date-pickers/PickersDay';
+import { Badge } from '@/components/ui/badge';
 
 interface DailySummaryProps {
   selectedDate: Date;
@@ -25,7 +25,29 @@ interface DailySummaryProps {
   entries: HistoryEntry[];
   goals: UserGoals;
   onGoalsClick: () => void;
+  allHistory: HistoryEntry[];
 }
+
+function ServerDay(props: PickersDayProps<dayjs.Dayjs> & { loggedDays?: number[] }) {
+  const { loggedDays = [], day, outsideCurrentMonth, ...other } = props;
+
+  const isLogged = !outsideCurrentMonth && loggedDays.includes(day.date());
+
+  return (
+    <div className="relative">
+      <PickersDay {...props} outsideCurrentMonth={outsideCurrentMonth} day={day} />
+      {isLogged && (
+         <Badge
+          variant="destructive"
+          className="absolute top-0.5 right-0.5 w-4 h-4 p-0 justify-center text-[10px] bg-transparent border-none text-orange-500"
+        >
+          🔥
+        </Badge>
+      )}
+    </div>
+  );
+}
+
 
 export default function DailySummary({
   selectedDate,
@@ -33,6 +55,7 @@ export default function DailySummary({
   entries,
   goals,
   onGoalsClick,
+  allHistory,
 }: DailySummaryProps) {
   const { toast } = useToast();
   const [analysisResult, setAnalysisResult] = useState<AnalyzeMealCompositionOutput | null>(null);
@@ -50,6 +73,10 @@ export default function DailySummary({
   const handleNextWeek = () => {
     onDateChange(addDays(selectedDate, 7));
   };
+
+  const loggedDaysInMonth = allHistory
+    .filter(entry => isSameMonth(new Date(entry.timestamp), selectedDate))
+    .map(entry => new Date(entry.timestamp).getDate());
 
   const handleAnalyzeDay = async () => {
     if (entries.length === 0) {
@@ -98,9 +125,8 @@ export default function DailySummary({
   );
 
   const totalCalories = entries.reduce((acc, entry) => {
-    if (!entry.analysis) return 0;
-    const { calories } = parseNutritionString(entry.analysis);
-    return acc + calories;
+    if (!entry.analysis || !entry.analysis.total_calories) return acc;
+    return acc + entry.analysis.total_calories;
   }, 0);
   
   const caloriesOver = goals.calories > 0 && totalCalories > goals.calories;
@@ -121,6 +147,14 @@ export default function DailySummary({
                   <DateCalendar 
                     value={dayjs(selectedDate)}
                     onChange={(newValue) => newValue && onDateChange(newValue.toDate())}
+                     slots={{
+                      day: ServerDay,
+                    }}
+                    slotProps={{
+                      day: {
+                        loggedDays: loggedDaysInMonth,
+                      } as any,
+                    }}
                   />
                 </LocalizationProvider>
               </PopoverContent>
@@ -167,7 +201,7 @@ export default function DailySummary({
               <div>
                   <h2 className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1" style={{textShadow: '0 1px 2px rgba(0,0,0,0.2)'}}>Calories Consumed</h2>
                   <div className={cn("flex items-baseline gap-2", caloriesOver && "text-red-200")} style={{textShadow: '0 2px 4px rgba(0,0,0,0.2)'}}>
-                      <span className="text-5xl md:text-6xl font-black tracking-tighter">{totalCalories.toLocaleString()}</span>
+                      <span className="text-5xl md:text-6xl font-black tracking-tighter">{Math.round(totalCalories).toLocaleString()}</span>
                       <span className="text-lg font-bold opacity-70">/ {goals.calories.toLocaleString()} kcal</span>
                   </div>
               </div>
@@ -198,5 +232,3 @@ export default function DailySummary({
     </div>
   );
 }
-
-    

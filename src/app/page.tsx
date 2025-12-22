@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -228,6 +227,7 @@ export default function Home() {
               entries={todayEntries}
               goals={goals}
               onGoalsClick={() => setShowGoalModal(true)}
+              allHistory={history}
             />
 
             {historyLoading ? (
