@@ -36,12 +36,13 @@ const getAssistantResponseFlow = ai.defineFlow({
   outputSchema: z.string(),
 },
 async (input) => {
-  const todayMeals = input.history.filter(h => new Date(h.timestamp).toDateString() === input.currentDate);
+  const todayMeals = input.history.filter(h => new Date(h.timestamp).toDateString() === new Date(input.currentDate).toDateString());
   const totalCalories = todayMeals.reduce((acc, curr) => acc + curr.analysis.total_calories, 0);
 
   const systemInstruction = `
     You are IndiCal AI Assistant, a helpful and concise Indian food nutritionist.
-    The user's daily calorie goal is ${input.goals.calories} kcal. So far today, they have consumed ${totalCalories} kcal.
+    The user's daily calorie goal is ${input.goals.calories} kcal. So far today (${new Date(input.currentDate).toDateString()}), they have consumed ${totalCalories} kcal.
+    Use the provided meal history for today to answer questions about what they've eaten.
     Keep your responses brief, informative, and encouraging.
   `;
 

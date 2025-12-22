@@ -79,8 +79,11 @@ export function Nav() {
   }, [user, toast]);
 
   const handleAssistantSend = async () => {
-    if (!assistantInput.trim() || !goals) {
-       toast({ variant: 'destructive', title: "Cannot send message", description: "User data or goals are not loaded yet." });
+    if (!assistantInput.trim()) {
+      return;
+    }
+    if (!goals) {
+      toast({ variant: 'destructive', title: "Cannot send message", description: "User data or goals are not loaded yet." });
       return;
     }
     
@@ -90,12 +93,16 @@ export function Nav() {
     setProcessingAssistant(true);
     
     try {
+      // Pass only today's history to the assistant
+      const today = new Date().toDateString();
+      const todayHistory = history.filter(h => new Date(h.timestamp).toDateString() === today);
+
       const response = await getAssistantResponse({
         userMessage: currentChat[currentChat.length -1].text,
-        history: history,
+        history: todayHistory,
         goals: goals,
         chatHistory: currentChat.slice(0, -1),
-        currentDate: new Date().toDateString()
+        currentDate: new Date().toISOString(),
       }, model);
       setAssistantChat(prev => [...prev, { role: 'model', text: response }]);
     } catch(e: any) {
