@@ -4,7 +4,7 @@ import { Bot, Moon, Sun, Home, LineChart, Settings } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 import {
   Sheet,
@@ -48,7 +48,7 @@ export function Nav() {
   const [processingAssistant, setProcessingAssistant] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [goals, setGoals] = useState<UserGoals | null>(null);
-  const assistantScrollRef = useState<HTMLDivElement | null>(null);
+  const assistantScrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('indical_theme');
@@ -97,6 +97,12 @@ export function Nav() {
         setProcessingAssistant(false);
     }
   };
+
+  useEffect(() => {
+    if (assistantScrollRef.current) {
+      assistantScrollRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [assistantChat]);
 
 
   return (
