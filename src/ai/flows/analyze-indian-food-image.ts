@@ -43,6 +43,7 @@ const prompt = ai.definePrompt({
       You are analyzing a photo of a meal.
       - Your primary goal is to identify every single food item in the image.
       - CRITICAL: You MUST break down the meal into its INDIVIDUAL separate items. Do not group them. For example, a thali with egg curry, rice, and roti should have three separate items in the 'items' array.
+      - To improve quantity estimation, use visual cues. For example, estimate the volume of curries or dals based on the size of the bowl (assume a standard Indian 'katori' is about 150ml). For rice, consider how much of the plate it covers. For items like roti or paratha, count them.
       - Set 'food_type' to "prepared".
       
       Image to analyze:
