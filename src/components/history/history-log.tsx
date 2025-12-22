@@ -115,7 +115,6 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
     setCurrentMealType(mealType);
     setAnalysisResult(null);
     try {
-      // Create a summarized version of the entries to save tokens
       const summarizedEntries = entries.map(entry => ({
         mealName: entry.mealName || entry.analysis.summary,
         total_calories: entry.analysis.total_calories,
@@ -162,41 +161,36 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
   return (
     <div className="grid grid-cols-1 gap-8 px-1 pb-24 pt-8">
       {meals.map(meal => (
-        <Card key={meal.type} className="rounded-[40px] shadow-lg border flex flex-col">
-           <CardHeader className="flex-row items-center justify-between">
-              <div className="flex items-center gap-3">
-                <MealTypeIcon type={meal.type} />
-                <CardTitle className="font-black text-2xl tracking-tighter">{meal.type}</CardTitle>
-              </div>
-              <div className='flex items-center gap-2'>
-                <Button variant="outline" size="sm" onClick={() => handleAnalyzeMeal(meal.type, meal.entries)} disabled={meal.entries.length === 0} className="hover:scale-105 active:scale-95 transition-transform duration-200">
-                  <BrainCircuit size={16} className="mr-2"/> Analyze Meal
-                </Button>
-                <div className='text-right'>
-                  <p className="font-bold text-lg">{meal.totalCalories} <span className="text-xs text-muted-foreground">kcal</span></p>
-                  <p className="text-xs text-muted-foreground">/ {Math.round(goals.calories/4)} kcal</p>
+        meal.entries.length > 0 && (
+          <Card key={meal.type} className="rounded-[40px] shadow-lg border flex flex-col">
+            <CardHeader className="flex-row items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <MealTypeIcon type={meal.type} />
+                  <CardTitle className="font-black text-2xl tracking-tighter">{meal.type}</CardTitle>
                 </div>
-              </div>
-           </CardHeader>
-           <CardContent className="flex-1">
-              {meal.entries.length > 0 ? (
+                <div className='flex items-center gap-2'>
+                  <Button variant="outline" size="sm" onClick={() => handleAnalyzeMeal(meal.type, meal.entries)} disabled={meal.entries.length === 0} className="hover:scale-105 active:scale-95 transition-transform duration-200">
+                    <BrainCircuit size={16} className="mr-2"/> Analyze Meal
+                  </Button>
+                  <div className='text-right'>
+                    <p className="font-bold text-lg">{meal.totalCalories} <span className="text-xs text-muted-foreground">kcal</span></p>
+                    <p className="text-xs text-muted-foreground">/ {Math.round(goals.calories/4)} kcal</p>
+                  </div>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-1">
                 <div className="space-y-3">
                   {meal.entries.map(entry => (
                     <HistoryItem key={entry.id} entry={entry} onSelect={onSelect} onDelete={onDelete} />
                   ))}
                 </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground border-2 border-dashed rounded-2xl p-8 text-center">
-                  <Utensils size={32} className="opacity-50 mb-2"/>
-                  <p className="text-sm font-bold">No {meal.type} logged</p>
-                </div>
-              )}
-           </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )
       ))}
 
       <AnalysisModal 
-        isOpen={isModalOpen && !isAnalyzing && !!analysisResult}
+        isOpen={isModalOpen}
         setIsOpen={setIsModalOpen}
         isAnalyzing={isAnalyzing}
         analysisResult={analysisResult}

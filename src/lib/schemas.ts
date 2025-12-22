@@ -37,7 +37,6 @@ export const AnalyzeIndianFoodImageInputSchema = z.object({
 export const AnalyzeMealCompositionInputSchema = z.object({
   mealType: z.string().describe("The type of meal, e.g., 'Breakfast', 'Lunch'."),
   mealEntries: z.array(z.object({
-      // This is a summarized version, not the full analysis
       mealName: z.string().optional(),
       total_calories: z.number(),
       total_macros: z.object({

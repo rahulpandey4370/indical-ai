@@ -1,5 +1,6 @@
 
 import { z } from 'zod';
+import { AnalyzeMealCompositionOutputSchema as AnalyzeMealCompositionOutputZodSchema } from './schemas';
 
 export type MacroNutrients = {
   protein: number;
@@ -94,12 +95,6 @@ export type GenerateInsightsInput = z.infer<typeof GenerateInsightsInputSchema>;
 export type GenerateInsightsOutput = z.infer<typeof GenerateInsightsOutputSchema>;
 
 // Meal Composition Analysis
-export const AnalyzeMealCompositionOutputSchema = z.object({
-  title: z.string(),
-  overallAssessment: z.string(),
-  whatWentWell: z.array(z.string()),
-  areasForImprovement: z.array(z.string()),
-  mealRating: z.number().min(1).max(10),
-});
+export const AnalyzeMealCompositionOutputSchema = AnalyzeMealCompositionOutputZodSchema;
 
 export type AnalyzeMealCompositionOutput = z.infer<typeof AnalyzeMealCompositionOutputSchema>;
