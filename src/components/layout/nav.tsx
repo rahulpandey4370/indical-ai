@@ -48,6 +48,7 @@ export function Nav() {
   const [processingAssistant, setProcessingAssistant] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [goals, setGoals] = useState<UserGoals | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const assistantScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,16 +66,24 @@ export function Nav() {
 
    useEffect(() => {
     if (user) {
+      setDataLoaded(false);
       Promise.all([getHistory(user.id), getGoals(user.id)])
         .then(([userHistory, userGoals]) => {
           setHistory(userHistory);
-          if (userGoals) setGoals(userGoals);
+          if (userGoals) {
+            setGoals(userGoals);
+          }
+          setDataLoaded(true);
+        })
+        .catch(() => {
+            toast({variant: 'destructive', title: "Error", description: "Could not load user history or goals."})
+            setDataLoaded(true); // Allow user to try anyway
         })
     }
-  }, [user]);
+  }, [user, toast]);
 
   const handleAssistantSend = async () => {
-    if (!assistantInput.trim()) {
+    if (!assistantInput.trim() || !dataLoaded) {
       return;
     }
     if (!user || !goals) {
@@ -181,8 +190,16 @@ export function Nav() {
              </div>
              <div className="p-4 border-t bg-background">
               <div className="relative flex items-center">
-                <Input type="text" value={assistantInput} onChange={(e) => setAssistantInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAssistantSend()} placeholder="Ask about macros..." className="pr-12" />
-                <Button onClick={handleAssistantSend} disabled={processingAssistant} size="icon" className="absolute right-2" variant="ghost">
+                <Input 
+                  type="text" 
+                  value={assistantInput} 
+                  onChange={(e) => setAssistantInput(e.target.value)} 
+                  onKeyDown={(e) => e.key === 'Enter' && handleAssistantSend()} 
+                  placeholder={!dataLoaded ? "Loading user data..." : "Ask about macros..."}
+                  className="pr-12" 
+                  disabled={!dataLoaded || processingAssistant}
+                />
+                <Button onClick={handleAssistantSend} disabled={!dataLoaded || processingAssistant} size="icon" className="absolute right-2" variant="ghost">
                   {processingAssistant ? <Loader2 className="animate-spin" /> : <Send size={20}/>}
                 </Button>
               </div>
