@@ -1,4 +1,3 @@
-
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
@@ -30,7 +29,7 @@ interface HistoryLogProps {
   goals: UserGoals;
 }
 
-const mealOrder: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+const mealOrder: MealType[] = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
 
 const MealTypeIcon = ({ type }: { type?: MealType }) => {
   switch (type) {
@@ -129,7 +128,8 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
       const summarizedEntries = entries.map(entry => ({
         mealName: entry.mealName || entry.analysis.summary,
         total_calories: entry.analysis.total_calories,
-        total_macros: entry.analysis.total_macros
+        total_macros: entry.analysis.total_macros,
+        mealType: entry.mealType || 'Snack',
       }));
 
       const result = await analyzeMealComposition({
