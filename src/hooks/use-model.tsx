@@ -1,4 +1,3 @@
-
 'use client';
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 
@@ -10,6 +9,8 @@ type ModelDefinition = {
 export const availableModels: ModelDefinition[] = [
   { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
   { id: 'gemini-3.0-flash', name: 'Gemini 3.0 Flash' },
+  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite' },
+  { id: 'gemma-3-27b', name: 'Gemma 3 27B' },
 ];
 
 const DEFAULT_MODEL_ID = 'gemini-2.5-flash';
