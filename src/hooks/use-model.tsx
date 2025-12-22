@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
 
 type ModelDefinition = {
   id: string;
@@ -19,6 +19,8 @@ interface ModelContextValue {
   model: string;
   setModel: (modelId: string) => void;
   availableModels: ModelDefinition[];
+  modelUsage: Record<string, number>;
+  incrementModelUsage: (modelId: string) => void;
 }
 
 const ModelContext = createContext<ModelContextValue | undefined>(undefined);
@@ -26,6 +28,12 @@ const ModelContext = createContext<ModelContextValue | undefined>(undefined);
 export function ModelProvider({ children }: { children: ReactNode }) {
   const [model, setModel] = useState<string>(DEFAULT_MODEL_ID);
   const [isMounted, setIsMounted] = useState(false);
+  const [modelUsage, setModelUsage] = useState<Record<string, number>>({});
+  
+  const getStorageKey = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return `indical_model_usage_${today}`;
+  }
 
   useEffect(() => {
     setIsMounted(true);
@@ -33,7 +41,31 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     if (savedModel && availableModels.some(m => m.id === savedModel)) {
       setModel(savedModel);
     }
+    
+    // Load today's usage
+    const usageKey = getStorageKey();
+    const savedUsage = localStorage.getItem(usageKey);
+    if(savedUsage) {
+      setModelUsage(JSON.parse(savedUsage));
+    }
+    
+    // Clear out old usage data
+    Object.keys(localStorage).forEach(key => {
+      if(key.startsWith('indical_model_usage_') && key !== usageKey) {
+        localStorage.removeItem(key);
+      }
+    });
+
   }, []);
+
+  const incrementModelUsage = useCallback((modelId: string) => {
+    setModelUsage(prev => {
+      const newUsage = { ...prev, [modelId]: (prev[modelId] || 0) + 1 };
+      localStorage.setItem(getStorageKey(), JSON.stringify(newUsage));
+      return newUsage;
+    });
+  }, []);
+
 
   useEffect(() => {
     if (isMounted) {
@@ -41,10 +73,17 @@ export function ModelProvider({ children }: { children: ReactNode }) {
     }
   }, [model, isMounted]);
 
+  const setModelAndIncrement = (modelId: string) => {
+    setModel(modelId);
+    incrementModelUsage(modelId);
+  }
+
   const value = {
     model,
-    setModel,
+    setModel: setModelAndIncrement,
     availableModels,
+    modelUsage,
+    incrementModelUsage
   };
 
   return <ModelContext.Provider value={value}>{children}</ModelContext.Provider>;

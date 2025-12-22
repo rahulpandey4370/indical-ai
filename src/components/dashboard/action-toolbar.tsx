@@ -9,7 +9,7 @@ interface ActionToolbarProps {
 }
 
 export function ActionToolbar({ onAddMeal }: ActionToolbarProps) {
-  const { model, setModel, availableModels } = useModel();
+  const { model, setModel, availableModels, modelUsage } = useModel();
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-2 w-full max-w-sm">
@@ -33,7 +33,12 @@ export function ActionToolbar({ onAddMeal }: ActionToolbarProps) {
                   <DropdownMenuRadioGroup value={model} onValueChange={setModel}>
                     {availableModels.map((m) => (
                       <DropdownMenuRadioItem key={m.id} value={m.id}>
-                        {m.name}
+                        <div className="flex justify-between w-full items-center">
+                          <span>{m.name}</span>
+                          <span className="text-xs bg-muted text-muted-foreground rounded-full px-2 py-0.5 ml-2">
+                            {modelUsage[m.id] || 0}
+                          </span>
+                        </div>
                       </DropdownMenuRadioItem>
                     ))}
                   </DropdownMenuRadioGroup>
