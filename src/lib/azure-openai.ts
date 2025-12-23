@@ -6,7 +6,7 @@ import { z, ZodSchema } from 'zod';
 
 const azureOpenAI = new OpenAI({
   apiKey: process.env.AZURE_OPENAI_API_KEY,
-  baseURL: `${process.env.AZURE_OPENAI_ENDPOINT}openai/deployments/${process.env.AZURE_OPENAI_DEPLOYMENT_NAME}`,
+  baseURL: process.env.AZURE_OPENAI_ENDPOINT,
   defaultQuery: { "api-version": "2024-02-01" },
   defaultHeaders: { 'api-key': process.env.AZURE_OPENAI_API_KEY },
 });
@@ -73,7 +73,6 @@ export async function callAzureOpenAI<T extends ZodSchema>(
       model: deploymentName,
       messages: [{ role: 'user', content: textPrompt }],
       response_format: { type: 'json_object' },
-      temperature: 0.2,
     });
 
     const content = response.choices[0]?.message?.content;
@@ -110,7 +109,6 @@ export async function callAzureOpenAIChat(
     const response = await azureOpenAI.chat.completions.create({
       model: deploymentName,
       messages: chatMessages,
-      temperature: 0.7,
     });
     return response.choices[0]?.message?.content || '';
   } catch (error: any) {
