@@ -24,7 +24,7 @@ export async function analyzeMealComposition(
   return { ...result, modelId };
 }
 
-const geminiPromptTemplate = `
+const universalPromptTemplate = `
 You are an expert Indian nutritionist. Your task is to analyze a single meal's composition and provide clear, actionable feedback, including a detailed nutrient breakdown.
 The user's total daily goals are provided for context, but your primary focus is on the quality and balance of THIS specific meal, considering it's a {{mealType}}.
 A typical Indian {{mealType}} should be balanced. For example, breakfast should have a good amount of protein, lunch should be substantial and balanced, and dinner should be lighter.
@@ -49,39 +49,6 @@ Analysis Steps:
 7.  **Generate Output**: Create a concise and encouraging JSON response. Populate the 'detailedNutrients' array with the total Calories, Protein, Carbs, Fat, and the estimated values for Vitamin C, Vitamin D, Vitamin B12, Iron, and Magnesium.
 `;
 
-const gemmaPromptTemplate = `You are an expert Indian nutritionist. Analyze the meal composition below and return a single, raw JSON object and NOTHING else.
-
-User's Daily Goals:
-- Calories: {{{userGoals.calories}}}
-- Protein: {{{userGoals.protein}}}g
-- Carbs: {{{userGoals.carbs}}}g
-- Fat: {{{userGoals.fat}}}g
-
-Meal to Analyze ({{mealType}}):
-{{{json mealEntries}}}
-
-Your JSON output MUST have the following structure:
-{
-  "title": "A catchy, encouraging title for the analysis",
-  "overallAssessment": "A brief, one-sentence overall assessment of the meal.",
-  "whatWentWell": ["A list of 2-3 positive points."],
-  "areasForImprovement": ["A list of 2-3 actionable suggestions for improvement."],
-  "mealRating": (a rating from 1 to 10),
-  "detailedNutrients": [
-    { "name": "Calories", "value": ..., "unit": "kcal" },
-    { "name": "Protein", "value": ..., "unit": "g" },
-    { "name": "Carbohydrates", "value": ..., "unit": "g" },
-    { "name": "Fat", "value": ..., "unit": "g" },
-    { "name": "Vitamin C", "value": ..., "unit": "mg" },
-    { "name": "Vitamin D", "value": ..., "unit": "IU" },
-    { "name": "Vitamin B12", "value": ..., "unit": "mcg" },
-    { "name": "Iron", "value": ..., "unit": "mg" },
-    { "name": "Magnesium", "value": ..., "unit": "mg" }
-  ]
-}
-Ensure 'detailedNutrients' is an array of nested JSON objects, each with a name, value, and unit field. Do not wrap the JSON in markdown backticks.`;
-
-
 const analyzeMealCompositionFlow = ai.defineFlow(
   {
     name: 'analyzeMealCompositionFlow',
@@ -90,39 +57,19 @@ const analyzeMealCompositionFlow = ai.defineFlow(
   },
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
-    const model = `googleai/${modelId}`;
+    const model = modelId.startsWith('gpt') ? `openai/${modelId}` : `googleai/${modelId}`;
     
-    if (modelId.startsWith('gemma')) {
-        const llmResponse = await ai.generate({
-            prompt: gemmaPromptTemplate,
-            model,
-            promptParams: input,
-        });
-        let rawJson = llmResponse.text;
-        if (rawJson.startsWith('```json')) {
-          rawJson = rawJson.substring(7, rawJson.length - 3).trim();
-        }
-        try {
-            const parsed = JSON.parse(rawJson);
-            return AnalyzeMealCompositionOutputSchema.parse(parsed);
-        } catch(e) {
-            console.error("Failed to parse Gemma JSON:", rawJson);
-            throw new Error(`Gemma returned invalid JSON. Raw output: ${rawJson}`);
-        }
+    const prompt = ai.definePrompt({
+      name: 'analyzeMealCompositionPrompt',
+      input: { schema: AnalyzeMealCompositionInputSchema },
+      output: { schema: AnalyzeMealCompositionOutputSchema },
+      prompt: universalPromptTemplate,
+    });
 
-    } else { // Is a Gemini model
-        const prompt = ai.definePrompt({
-          name: 'analyzeMealCompositionPrompt',
-          input: { schema: AnalyzeMealCompositionInputSchema },
-          output: { schema: AnalyzeMealCompositionOutputSchema },
-          prompt: geminiPromptTemplate,
-        });
-
-        const { output } = await prompt(input, { model });
-        if (!output) {
-          throw new Error("Meal composition analysis failed to produce an output.");
-        }
-        return output;
+    const { output } = await prompt(input, { model });
+    if (!output) {
+      throw new Error("Meal composition analysis failed to produce an output.");
     }
+    return output;
   }
 );

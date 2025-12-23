@@ -1,16 +1,17 @@
-
 'use server';
 
 import {genkit, ModelReference} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
+import {openAI} from '@genkit-ai/compat-oai/openai';
 import {z} from 'zod';
 import {ai} from './index';
 
 // --- Model Definitions ---
 const gemini25Flash = googleAI.model('gemini-2.5-flash');
-const gemini3Flash = googleAI.model('gemini-3-flash-preview');
-const gemini25FlashLite = googleAI.model('gemini-2.5-flash-lite');
-const gemma327b = googleAI.model('gemma-3-27b-it');
+
+// Azure OpenAI Model
+const gpt52Chat = openAI.model('gpt-5.2-chat');
+
 
 // Define the tool using the global 'ai' object
 const googleSearchTool = ai.defineTool(
@@ -51,9 +52,7 @@ const googleSearchTool = ai.defineTool(
 // Map model IDs to their references
 const modelMap: Record<string, ModelReference<any>> = {
   'gemini-2.5-flash': gemini25Flash,
-  'gemini-3-flash-preview': gemini3Flash,
-  'gemini-2.5-flash-lite': gemini25FlashLite,
-  'gemma-3-27b-it': gemma327b,
+  'gpt-5.2-chat': gpt52Chat,
 };
 
 // This function dynamically configures the global AI object based on a model ID
@@ -61,7 +60,14 @@ export async function configureAi(modelId: string) {
   const model = modelMap[modelId] || gemini25Flash; // Fallback to default
 
   genkit({
-    plugins: [googleAI({apiKey: process.env.GEMINI_API_KEY})],
+    plugins: [
+        googleAI({apiKey: process.env.GEMINI_API_KEY}),
+        openAI({
+            apiKey: process.env.AZURE_OPENAI_API_KEY,
+            baseURL: `${process.env.AZURE_OPENAI_ENDPOINT}openai/deployments/gpt-5.2-chat`,
+            defaultHeaders: { 'api-key': process.env.AZURE_OPENAI_API_KEY! },
+        }),
+    ],
     model: model,
     tools: [googleSearchTool],
   });

@@ -39,7 +39,7 @@ export async function refineNutritionalAnalysis(
   return { ...result, modelId };
 }
 
-const geminiPromptTemplate = `
+const universalPromptTemplate = `
 You are a nutritional assistant. Your task is to refine a nutrition breakdown based on the user's feedback.
 
 Here is the current analysis:
@@ -64,37 +64,6 @@ Your response must be a valid JSON object that strictly follows this format:
 }
 `;
 
-const gemmaPromptTemplate = `You are a nutritional assistant. Your task is to refine a nutrition breakdown based on the user's feedback and return a single, raw JSON object. Do not add any other text.
-
-Here is the current analysis:
-{{{json initialAnalysis}}}
-
-Here are the user's instructions for refinement:
-"{{{refinementInstruction}}}"
-
-Your JSON output MUST have the following structure. You MUST populate both 'refinedAnalysis' and 'responseText'.
-{
-  "refinedAnalysis": {
-    "items": [
-      {
-        "name": "...",
-        "weight": ...,
-        "unit": "g" or "ml",
-        "calories": ...,
-        "macros": { "protein": ..., "carbs": ..., "fat": ... }
-      }
-    ],
-    "total_calories": ...,
-    "total_macros": { "protein": ..., "carbs": ..., "fat": ... },
-    "confidence_score": ...,
-    "food_type": "prepared" or "packaged",
-    "summary": "..."
-  },
-  "responseText": "A short, friendly message confirming your changes."
-}
-Update the 'refinedAnalysis' object with the corrected data, recalculating all totals. Do not wrap the JSON in markdown.`;
-
-
 const refineNutritionalAnalysisFlow = ai.defineFlow(
   {
     name: 'refineNutritionalAnalysisFlow',
@@ -106,46 +75,22 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
   },
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
-    const model = `googleai/${modelId}`;
+    const model = modelId.startsWith('gpt') ? `openai/${modelId}` : `googleai/${modelId}`;
 
-    if (modelId.startsWith('gemma')) {
-        const llmResponse = await ai.generate({
-            prompt: gemmaPromptTemplate,
-            model,
-            promptParams: input,
-        });
-        let rawJson = llmResponse.text;
-        if (rawJson.startsWith('```json')) {
-          rawJson = rawJson.substring(7, rawJson.length - 3).trim();
-        }
-        try {
-            const parsed = JSON.parse(rawJson);
-            // The schema here should match what we expect from Gemma's output format
-            return z.object({ 
-                refinedAnalysis: NutritionalAnalysisSchema, 
-                responseText: z.string() 
-            }).parse(parsed);
-        } catch(e) {
-            console.error("Failed to parse Gemma JSON:", rawJson, e);
-            throw new Error(`Gemma returned invalid JSON. Raw output: ${rawJson}`);
-        }
+    const prompt = ai.definePrompt({
+        name: 'refineNutritionalAnalysisPrompt',
+        input: {schema: RefineNutritionalAnalysisInputSchema},
+        output: {schema: z.object({
+            refinedAnalysis: NutritionalAnalysisSchema,
+            responseText: z.string(),
+        })},
+        prompt: universalPromptTemplate,
+    });
 
-    } else { // Is a Gemini model
-        const prompt = ai.definePrompt({
-            name: 'refineNutritionalAnalysisPrompt',
-            input: {schema: RefineNutritionalAnalysisInputSchema},
-            output: {schema: z.object({
-                refinedAnalysis: NutritionalAnalysisSchema,
-                responseText: z.string(),
-            })},
-            prompt: geminiPromptTemplate,
-        });
-
-        const {output} = await prompt(input, { model });
-        if (!output) {
-          throw new Error("Refinement failed to produce an output.");
-        }
-        return output;
+    const {output} = await prompt(input, { model });
+    if (!output) {
+      throw new Error("Refinement failed to produce an output.");
     }
+    return output;
   }
 );

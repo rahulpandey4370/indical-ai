@@ -36,9 +36,9 @@ const getAssistantResponseFlow = ai.defineFlow(
   },
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
-    const model = `googleai/${modelId}`;
+    const model = modelId.startsWith('gpt') ? `openai/${modelId}` : `googleai/${modelId}`;
 
-    const todayMeals = input.history.filter(h => new Date(h.timestamp).toDateString() === input.currentDate);
+    const todayMeals = input.history.filter(h => new Date(h.timestamp).toDateString() === new Date(input.currentDate).toDateString());
     const totalCalories = todayMeals.reduce((acc, curr) => acc + curr.analysis.total_calories, 0);
 
     const systemInstruction = `

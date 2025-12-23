@@ -72,7 +72,7 @@ export async function generateInsights(
 }
 
 
-const geminiPromptTemplate = `
+const universalPromptTemplate = `
 You are a master nutritionist and data analyst.
 Your task is to analyze a user's meal history and provide actionable insights.
 Be encouraging, positive, and focus on simple, effective advice.
@@ -117,11 +117,6 @@ Based on all the provided data, generate the final JSON output.
 - Generate 2-3 key, actionable observations.
 `;
 
-const gemmaPromptTemplate = `${geminiPromptTemplate}
-If 'calculationRequest' is provided, you MUST return 'bmrAndMaintenance' and 'suggestedPlans' as nested JSON objects within the main object.
-You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
-
-
 const generateInsightsFlow = ai.defineFlow(
   {
     name: 'generateInsightsFlow',
@@ -130,34 +125,19 @@ const generateInsightsFlow = ai.defineFlow(
   },
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
-    const model = `googleai/${modelId}`;
+    const model = modelId.startsWith('gpt') ? `openai/${modelId}` : `googleai/${modelId}`;
 
-    if (modelId.startsWith('gemma')) {
-        const llmResponse = await ai.generate({
-            prompt: gemmaPromptTemplate,
-            model,
-            promptParams: input,
-        });
-        let rawJson = llmResponse.text;
-        if (rawJson.startsWith('```json')) {
-          rawJson = rawJson.substring(7, rawJson.length - 3).trim();
-        }
-        const parsed = JSON.parse(rawJson);
-        return GenerateInsightsOutputSchema.parse(parsed);
+    const prompt = ai.definePrompt({
+        name: 'generateInsightsPrompt',
+        input: { schema: GenerateInsightsInputSchema },
+        output: { schema: GenerateInsightsOutputSchema },
+        prompt: universalPromptTemplate,
+    });
 
-    } else { // Is a Gemini model
-        const prompt = ai.definePrompt({
-            name: 'generateInsightsPrompt',
-            input: { schema: GenerateInsightsInputSchema },
-            output: { schema: GenerateInsightsOutputSchema },
-            prompt: geminiPromptTemplate,
-        });
-
-        const { output } = await prompt(input, { model });
-        if (!output) {
-          throw new Error("Insight generation failed to produce an output.");
-        }
-        return output;
+    const { output } = await prompt(input, { model });
+    if (!output) {
+      throw new Error("Insight generation failed to produce an output.");
     }
+    return output;
   }
 );
