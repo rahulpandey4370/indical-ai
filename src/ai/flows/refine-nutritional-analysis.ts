@@ -75,7 +75,12 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
   },
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
-    const model = modelId.startsWith('gpt') ? `openai/${modelId}` : `googleai/${modelId}`;
+    let model;
+    if (modelId.startsWith('gpt')) {
+        model = `azure/${modelId}`;
+    } else {
+        model = `googleai/${modelId}`;
+    }
 
     const prompt = ai.definePrompt({
         name: 'refineNutritionalAnalysisPrompt',
