@@ -197,9 +197,7 @@ const generateInsightsFlow = ai.defineFlow({
         input: { schema: GenerateInsightsInputSchema },
         output: { schema: GenerateInsightsOutputSchema },
         prompt: promptTemplate,
-        config: {
-            model
-        }
+        model,
     });
 
     const { output } = await prompt(input);

@@ -120,9 +120,7 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
         input: {schema: RefineNutritionalAnalysisInputSchema},
         output: {schema: RefineNutritionalAnalysisOutputSchema},
         prompt: promptTemplate,
-        config: {
-            model,
-        }
+        model,
     });
 
     const {output} = await prompt(input);

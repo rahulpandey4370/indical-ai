@@ -155,9 +155,7 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
         })},
         output: {schema: AnalyzeIndianFoodImageOutputSchema},
         prompt: promptTemplate,
-        config: {
-            model,
-        }
+        model,
       });
       
     const {output} = await prompt({

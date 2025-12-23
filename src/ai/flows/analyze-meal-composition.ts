@@ -107,9 +107,7 @@ const analyzeMealCompositionFlow = ai.defineFlow({
       input: { schema: AnalyzeMealCompositionInputSchema },
       output: { schema: AnalyzeMealCompositionOutputSchema },
       prompt: promptTemplate,
-      config: {
-        model,
-      }
+      model,
     });
 
     const { output } = await prompt(input);
