@@ -131,7 +131,7 @@ const generateInsightsPrompt = ai.definePrompt({
 }
 
 
-const promptTemplate = `
+const geminiPromptTemplate = `
 You are a master nutritionist and data analyst.
 Your task is to analyze a user's meal history and provide actionable insights.
 Be encouraging, positive, and focus on simple, effective advice.
@@ -177,7 +177,16 @@ Based on all the provided data, generate the final JSON output.
 `;
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
+<<<<<<< HEAD
 const generateInsightsFlow = ai.defineFlow({
+=======
+const gemmaPromptTemplate = `${geminiPromptTemplate}
+You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
+
+
+const generateInsightsFlow = ai.defineFlow(
+  {
+>>>>>>> a37319f (Failed to fetch from https://generativelanguage.googleapis.com/v1beta/mo)
     name: 'generateInsightsFlow',
     inputSchema: GenerateInsightsInputSchema,
     outputSchema: GenerateInsightsOutputSchema,
@@ -192,20 +201,36 @@ const generateInsightsFlow = ai.defineFlow({
     const modelId = context?.modelId || 'gemini-2.5-flash';
     const model = `googleai/${modelId}`;
 
-    const prompt = ai.definePrompt({
-        name: 'generateInsightsPrompt',
-        input: { schema: GenerateInsightsInputSchema },
-        output: { schema: GenerateInsightsOutputSchema },
-        prompt: promptTemplate,
-        model,
-    });
+    if (modelId.startsWith('gemma')) {
+        const llmResponse = await ai.generate({
+            prompt: gemmaPromptTemplate,
+            model,
+            promptParams: input,
+        });
+        const rawJson = llmResponse.text;
+        const parsed = JSON.parse(rawJson);
+        return GenerateInsightsOutputSchema.parse(parsed);
 
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error("Insight generation failed to produce an output.");
+    } else { // Is a Gemini model
+        const prompt = ai.definePrompt({
+            name: 'generateInsightsPrompt',
+            input: { schema: GenerateInsightsInputSchema },
+            output: { schema: GenerateInsightsOutputSchema },
+            prompt: geminiPromptTemplate,
+            model,
+        });
+
+        const { output } = await prompt(input);
+        if (!output) {
+          throw new Error("Insight generation failed to produce an output.");
+        }
+        return output;
     }
+<<<<<<< HEAD
     return output;
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
+=======
+>>>>>>> a37319f (Failed to fetch from https://generativelanguage.googleapis.com/v1beta/mo)
   }
   return output;
 });

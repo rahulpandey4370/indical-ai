@@ -61,7 +61,7 @@ const analyzeMealCompositionPrompt = ai.definePrompt({
   return analyzeMealCompositionFlow(input, { context: { modelId } });
 }
 
-const promptTemplate = `
+const geminiPromptTemplate = `
 You are an expert Indian nutritionist. Your task is to analyze a single meal's composition and provide clear, actionable feedback, including a detailed nutrient breakdown.
 The user's total daily goals are provided for context, but your primary focus is on the quality and balance of THIS specific meal, considering it's a {{mealType}}.
 A typical Indian {{mealType}} should be balanced. For example, breakfast should have a good amount of protein, lunch should be substantial and balanced, and dinner should be lighter.
@@ -87,7 +87,16 @@ Analysis Steps:
 `;
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
+<<<<<<< HEAD
 const analyzeMealCompositionFlow = ai.defineFlow({
+=======
+const gemmaPromptTemplate = `${geminiPromptTemplate}
+You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
+
+
+const analyzeMealCompositionFlow = ai.defineFlow(
+  {
+>>>>>>> a37319f (Failed to fetch from https://generativelanguage.googleapis.com/v1beta/mo)
     name: 'analyzeMealCompositionFlow',
     inputSchema: AnalyzeMealCompositionInputSchema,
     outputSchema: AnalyzeMealCompositionOutputSchema,
@@ -102,20 +111,36 @@ const analyzeMealCompositionFlow = ai.defineFlow({
     const modelId = context?.modelId || 'gemini-2.5-flash';
     const model = `googleai/${modelId}`;
     
-    const prompt = ai.definePrompt({
-      name: 'analyzeMealCompositionPrompt',
-      input: { schema: AnalyzeMealCompositionInputSchema },
-      output: { schema: AnalyzeMealCompositionOutputSchema },
-      prompt: promptTemplate,
-      model,
-    });
+    if (modelId.startsWith('gemma')) {
+        const llmResponse = await ai.generate({
+            prompt: gemmaPromptTemplate,
+            model,
+            promptParams: input,
+        });
+        const rawJson = llmResponse.text;
+        const parsed = JSON.parse(rawJson);
+        return AnalyzeMealCompositionOutputSchema.parse(parsed);
 
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error("Meal composition analysis failed to produce an output.");
+    } else { // Is a Gemini model
+        const prompt = ai.definePrompt({
+          name: 'analyzeMealCompositionPrompt',
+          input: { schema: AnalyzeMealCompositionInputSchema },
+          output: { schema: AnalyzeMealCompositionOutputSchema },
+          prompt: geminiPromptTemplate,
+          model,
+        });
+
+        const { output } = await prompt(input);
+        if (!output) {
+          throw new Error("Meal composition analysis failed to produce an output.");
+        }
+        return output;
     }
+<<<<<<< HEAD
     return output;
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
+=======
+>>>>>>> a37319f (Failed to fetch from https://generativelanguage.googleapis.com/v1beta/mo)
   }
   return output;
 });

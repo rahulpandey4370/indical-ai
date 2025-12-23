@@ -86,7 +86,7 @@ const analyzeIndianFoodImagePrompt = ai.definePrompt({
   return analyzeIndianFoodImageFlow(input, { context: { modelId } });
 }
 
-const promptTemplate = `
+const geminiPromptTemplate = `
 You are an expert Indian nutritionist. Your task is to analyze the provided input and return a detailed nutritional breakdown in JSON format.
 
 CRITICAL INSTRUCTIONS FOR ALL MODES:
@@ -130,6 +130,9 @@ You must ALWAYS return a valid JSON object that strictly follows the provided ou
 `;
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
+const gemmaPromptTemplate = `${geminiPromptTemplate}
+You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
+
 const analyzeIndianFoodImageFlow = ai.defineFlow(
   {
     name: 'analyzeIndianFoodImageFlow',
@@ -144,20 +147,20 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
     const modelId = context?.modelId || 'gemini-2.5-flash';
     const model = `googleai/${modelId}`;
 
-    const prompt = ai.definePrompt({
-        name: 'analyzeIndianFoodImagePrompt',
-        input: {schema: z.object({
-          photoDataUri: z.string().optional(),
-          textInput: z.string().optional(),
-          isMealMode: z.boolean().optional(),
-          isBarcodeMode: z.boolean().optional(),
-          isTextMode: z.boolean().optional(),
-        })},
-        output: {schema: AnalyzeIndianFoodImageOutputSchema},
-        prompt: promptTemplate,
+    if (modelId.startsWith('gemma')) {
+      const llmResponse = await ai.generate({
+        prompt: gemmaPromptTemplate,
         model,
+        promptParams: {
+          photoDataUri: input.photoDataUri,
+          textInput: input.textInput,
+          isMealMode: input.mode === 'meal',
+          isBarcodeMode: input.mode === 'barcode',
+          isTextMode: input.mode === 'text',
+        }
       });
       
+<<<<<<< HEAD
     const {output} = await prompt({
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
       photoDataUri: input.photoDataUri,
@@ -168,7 +171,38 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
     });
     if (!output) {
       throw new Error("An unexpected response was received from the server.");
+=======
+      const rawJson = llmResponse.text;
+      const parsed = JSON.parse(rawJson);
+      return AnalyzeIndianFoodImageOutputSchema.parse(parsed);
+
+    } else { // Is a Gemini model
+        const prompt = ai.definePrompt({
+            name: 'analyzeIndianFoodImagePrompt',
+            input: {schema: z.object({
+              photoDataUri: z.string().optional(),
+              textInput: z.string().optional(),
+              isMealMode: z.boolean().optional(),
+              isBarcodeMode: z.boolean().optional(),
+              isTextMode: z.boolean().optional(),
+            })},
+            output: {schema: AnalyzeIndianFoodImageOutputSchema},
+            prompt: geminiPromptTemplate,
+            model,
+        });
+          
+        const {output} = await prompt({
+          photoDataUri: input.photoDataUri,
+          textInput: input.textInput,
+          isMealMode: input.mode === 'meal',
+          isBarcodeMode: input.mode === 'barcode',
+          isTextMode: input.mode === 'text',
+        });
+        if (!output) {
+          throw new Error("An unexpected response was received from the server.");
+        }
+        return output;
+>>>>>>> a37319f (Failed to fetch from https://generativelanguage.googleapis.com/v1beta/mo)
     }
-    return output;
   }
 );

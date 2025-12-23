@@ -75,7 +75,7 @@ const refineNutritionalAnalysisPrompt = ai.definePrompt({
   return refineNutritionalAnalysisFlow(input, { context: { modelId } });
 }
 
-const promptTemplate = `
+const geminiPromptTemplate = `
 You are a nutritional assistant. Your task is to refine a nutrition breakdown based on the user's feedback.
 
 Here is the current analysis:
@@ -101,6 +101,10 @@ Your response must be a valid JSON object that strictly follows this format:
 `;
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
+const gemmaPromptTemplate = `${geminiPromptTemplate}
+You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
+
+
 const refineNutritionalAnalysisFlow = ai.defineFlow(
   {
     name: 'refineNutritionalAnalysisFlow',
@@ -115,19 +119,37 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
     const modelId = context?.modelId || 'gemini-2.5-flash';
     const model = `googleai/${modelId}`;
 
-    const prompt = ai.definePrompt({
-        name: 'refineNutritionalAnalysisPrompt',
-        input: {schema: RefineNutritionalAnalysisInputSchema},
-        output: {schema: RefineNutritionalAnalysisOutputSchema},
-        prompt: promptTemplate,
-        model,
-    });
+    if (modelId.startsWith('gemma')) {
+        const llmResponse = await ai.generate({
+            prompt: gemmaPromptTemplate,
+            model,
+            promptParams: input,
+        });
+        const rawJson = llmResponse.text;
+        const parsed = JSON.parse(rawJson);
+        return RefineNutritionalAnalysisOutputSchema.parse(parsed);
 
+<<<<<<< HEAD
     const {output} = await prompt(input);
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
     if (!output) {
       throw new Error("Refinement failed to produce an output.");
+=======
+    } else { // Is a Gemini model
+        const prompt = ai.definePrompt({
+            name: 'refineNutritionalAnalysisPrompt',
+            input: {schema: RefineNutritionalAnalysisInputSchema},
+            output: {schema: RefineNutritionalAnalysisOutputSchema},
+            prompt: geminiPromptTemplate,
+            model,
+        });
+
+        const {output} = await prompt(input);
+        if (!output) {
+          throw new Error("Refinement failed to produce an output.");
+        }
+        return output;
+>>>>>>> a37319f (Failed to fetch from https://generativelanguage.googleapis.com/v1beta/mo)
     }
-    return output;
   }
 );
