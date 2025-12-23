@@ -4,10 +4,9 @@
  * @fileOverview Generates nutritional insights and recommendations based on user history and goals.
  */
 
-import { configureAi } from '@/ai/genkit';
 import { ai } from '@/ai/index';
 import { z } from 'genkit';
-import { HistoryEntry, UserGoals, ModelId } from '@/lib/types';
+import { ModelId } from '@/lib/types';
 import { AnalysisItemSchema } from '@/lib/schemas';
 
 const BMRSchema = z.object({
@@ -67,64 +66,6 @@ export type GenerateInsightsOutput = z.infer<typeof GenerateInsightsOutputSchema
 
 export async function generateInsights(
   input: GenerateInsightsInput,
-<<<<<<< HEAD
-  modelId: string,
-): Promise<GenerateInsightsOutput> {
-  await configureAi(modelId);
-  return generateInsightsFlow(input);
-}
-
-
-const generateInsightsPrompt = ai.definePrompt({
-    name: 'generateInsightsPrompt',
-    input: { schema: GenerateInsightsInputSchema },
-    output: { schema: GenerateInsightsOutputSchema },
-    prompt: `
-      You are a master nutritionist and data analyst.
-      Your task is to analyze a user's meal history and provide actionable insights.
-      Be encouraging, positive, and focus on simple, effective advice.
-
-      User's current goals:
-      - Calories: {{{goals.calories}}}
-      - Protein: {{{goals.protein}}}g
-      - Carbs: {{{goals.carbs}}}g
-      - Fat: {{{goals.fat}}}g
-
-      User's meal history:
-      {{{json history}}}
-
-      {{#if calculationRequest}}
-      The user has requested a calorie plan calculation. Here are their details:
-      - Weight: {{calculationRequest.weight}} kg
-      - Height: {{calculationRequest.height}} cm
-      - Age: {{calculationRequest.age}} years
-      - Gender: {{calculationRequest.gender}}
-      - Activity Level: {{calculationRequest.activityLevel}}
-
-      1.  Calculate BMR using the Mifflin-St Jeor equation:
-          - Men: (10 * weight in kg) + (6.25 * height in cm) - (5 * age in years) + 5
-          - Women: (10 * weight in kg) + (6.25 * height in cm) - (5 * age in years) - 161
-      2.  Calculate Maintenance Calories using these multipliers for the activity level:
-          - sedentary: 1.2
-          - light: 1.375
-          - moderate: 1.55
-          - active: 1.725
-          - very_active: 1.9
-      3.  Based on the maintenance calories, create 3 suggested plans in the 'suggestedPlans' array:
-          - A 'Weight Loss' plan with a 300-500 calorie deficit.
-          - A 'Weight Maintenance' plan.
-          - A 'Muscle Gain' plan with a 300-500 calorie surplus.
-          - Adjust macros for each plan appropriately. Protein should be higher for muscle gain.
-      4.  Populate the 'bmrAndMaintenance' object with your calculations.
-      {{/if}}
-
-      Based on all the provided data, generate the final JSON output.
-      - Analyze the history to find trends (e.g., "Your protein is often lowest at breakfast").
-      - Provide a concise summary of calorie trends and macro distribution.
-      - Generate 2-3 key, actionable observations.
-    `,
-  });
-=======
   modelId: ModelId
 ): Promise<GenerateInsightsOutput> {
   return generateInsightsFlow(input, { context: { modelId } });
@@ -175,11 +116,7 @@ Based on all the provided data, generate the final JSON output.
 - Provide a concise summary of calorie trends and macro distribution.
 - Generate 2-3 key, actionable observations.
 `;
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
-<<<<<<< HEAD
-const generateInsightsFlow = ai.defineFlow({
-=======
 const gemmaPromptTemplate = `${geminiPromptTemplate}
 If 'calculationRequest' is provided, you MUST return 'bmrAndMaintenance' and 'suggestedPlans' as nested JSON objects within the main object.
 You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
@@ -187,16 +124,9 @@ You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it 
 
 const generateInsightsFlow = ai.defineFlow(
   {
->>>>>>> a37319f (Failed to fetch from https://generativelanguage.googleapis.com/v1beta/mo)
     name: 'generateInsightsFlow',
     inputSchema: GenerateInsightsInputSchema,
     outputSchema: GenerateInsightsOutputSchema,
-<<<<<<< HEAD
-}, async (input) => {
-  const { output } = await generateInsightsPrompt(input);
-  if (!output) {
-    throw new Error("Insight generation failed to produce an output.");
-=======
   },
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
@@ -229,11 +159,5 @@ const generateInsightsFlow = ai.defineFlow(
         }
         return output;
     }
-<<<<<<< HEAD
-    return output;
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
-=======
->>>>>>> a37319f (Failed to fetch from https://generativelanguage.googleapis.com/v1beta/mo)
   }
-  return output;
-});
+);

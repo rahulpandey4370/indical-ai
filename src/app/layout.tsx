@@ -4,7 +4,6 @@ import { Toaster } from '@/components/ui/toaster';
 import { UserProvider } from '@/hooks/use-user';
 import { ModelProvider } from '@/hooks/use-model';
 import { Nav } from '@/components/layout/nav';
-import { ModelProvider } from '@/hooks/use-model';
 
 const APP_NAME = "IndiCal AI";
 const APP_DEFAULT_TITLE = "IndiCal AI";
@@ -38,7 +37,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: {
-      default: APP_DEFAULT_TITLE,
+      default: APP_DEFAULT_title,
       template: APP_TITLE_TEMPLATE,
     },
     description: APP_DESCRIPTION,

@@ -13,13 +13,13 @@ import type {
   ChatMessage,
   MealType,
   RefinedNutritionalAnalysis,
+  ModelId,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NutritionalChart } from './nutritional-chart';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
-import { useModel } from '@/hooks/use-model'; // Import the new hook
 import { Utensils } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,11 +37,7 @@ export function AnalysisPanel({
   existingEntry: HistoryEntry;
 }) {
   const { user } = useUser();
-<<<<<<< HEAD
-  const { model, incrementModelUsage } = useModel(); // Get model utility
-=======
   const { selectedModel } = useModel();
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
   const [imagePreview, setImagePreview] = useState<string | null>(
     existingEntry?.imageUrl || null
   );
@@ -84,17 +80,12 @@ export function AnalysisPanel({
     }
     setIsAnalyzing(true);
     setAnalysisError(null);
-    incrementModelUsage(model);
     try {
       const result = await analyzeIndianFoodImage({
         photoDataUri: existingEntry.imageUrl, // This is now a URL, not base64
         textInput: existingEntry.textInput,
         mode: existingEntry.mode,
-<<<<<<< HEAD
-      }, model);
-=======
       }, selectedModel);
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
       setAnalysisResult(result);
       if (!mealName && existingEntry.mode === 'text' && result.items.length === 1) {
         setMealName(result.items[0].name);
@@ -122,25 +113,15 @@ export function AnalysisPanel({
     setChatMessages(prev => [...prev, userMsg]);
     setRefinementInput("");
     setIsRefining(true);
-    incrementModelUsage(model);
     try {
       const response = await refineNutritionalAnalysis({
         initialAnalysis: analysisResult,
         refinementInstruction: userMsg.text,
-<<<<<<< HEAD
-      }, model);
-=======
       }, selectedModel);
-<<<<<<< HEAD
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
-      if (response.refinedAnalysis) {
-        setAnalysisResult(response.refinedAnalysis);
-=======
       
       const updatedAnalysis: NutritionalAnalysis = {
         ...response.refinedAnalysis,
         modelId: response.modelId
->>>>>>> 8f435a2 (Did you just add a default response for gemma because in the text input)
       }
 
       setAnalysisResult(updatedAnalysis);
