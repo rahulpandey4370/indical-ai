@@ -3,8 +3,7 @@
 
 import OpenAI from 'openai';
 import { z, ZodSchema } from 'zod';
-import { Prompt } from 'genkit/experimental/prompt';
-import { renderPrompt } from 'genkit/experimental/prompt';
+import { Prompt } from 'genkit';
 
 const azureOpenAI = new OpenAI({
   apiKey: process.env.AZURE_OPENAI_API_KEY,
@@ -15,36 +14,65 @@ const azureOpenAI = new OpenAI({
 
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME!;
 
+// Basic Handlebars-like replacer
+function simpleTemplateRender(template: string, data: Record<string, any>): string {
+    let output = template;
+
+    // Replace {{media url=...}}
+    output = output.replace(/{{media\s+url=([^}]+)}}/g, (match, key) => {
+        const value = data[key.trim()];
+        if(typeof value === 'string' && value.startsWith('data:image')) {
+            return `[An image was provided: ${value.substring(0, 50)}...]`;
+        }
+        return '';
+    });
+
+    // Replace {{{json ...}}}
+    output = output.replace(/{{{json\s+([^}]+)}}}/g, (match, key) => {
+        const value = data[key.trim()];
+        return JSON.stringify(value, null, 2);
+    });
+
+    // Replace {{{...}}} and {{...}}
+    output = output.replace(/{{{\s*([^}]+)\s*}}}/g, (match, key) => {
+        const keys = key.trim().split('.');
+        let current = data;
+        for(const k of keys) {
+            if(current && typeof current === 'object' && k in current) {
+                current = current[k];
+            } else {
+                return ''; // Key not found
+            }
+        }
+        return String(current);
+    });
+    
+    // Replace {{#if ...}} ... {{/if}}
+    output = output.replace(/{{#if\s+([^}]+)}}([\s\S]*?){{\/if}}/g, (match, key, content) => {
+        return data[key.trim()] ? content : '';
+    });
+
+    return output;
+}
+
+
 /**
  * A helper function to call Azure OpenAI with a structured prompt and parse the JSON output.
- * It manually constructs the prompt from a Genkit prompt object.
  */
 export async function callAzureOpenAI<T extends ZodSchema>(
-  prompt: Prompt<any, T>,
+  promptTemplate: string,
   input: z.infer<any>,
   outputSchema: T
 ): Promise<z.infer<T>> {
-  // Render the prompt to a string using Genkit's rendering utility
-  const renderedPrompt = await renderPrompt({ prompt, input });
-
-  // Right now, we only support text-based prompts for the direct Azure call.
-  const textPrompt = renderedPrompt.messages.map(m => {
-    if(m.role === 'system') return m.content[0].text;
-    const parts = m.content.map(p => {
-        if (p.text) return p.text;
-        // The direct API call doesn't support media parts like Genkit, so we provide a placeholder.
-        if (p.media) return `[An image was provided: ${p.media.url.substring(0, 50)}...]`;
-        return '';
-    }).join('\n');
-    return `${m.role}: ${parts}`;
-  }).join('\n');
+  
+  const textPrompt = simpleTemplateRender(promptTemplate, input);
 
   try {
     const response = await azureOpenAI.chat.completions.create({
       model: deploymentName,
       messages: [{ role: 'user', content: textPrompt }],
       response_format: { type: 'json_object' },
-      temperature: 0.2, // Lower temperature for more predictable JSON output
+      temperature: 0.2,
     });
 
     const content = response.choices[0]?.message?.content;
@@ -52,14 +80,12 @@ export async function callAzureOpenAI<T extends ZodSchema>(
       throw new Error('Azure OpenAI returned an empty response.');
     }
 
-    // Clean up potential markdown code fences around the JSON
     const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
 
     const parsed = JSON.parse(cleanedContent);
     return outputSchema.parse(parsed);
   } catch (error: any) {
     console.error("Error calling Azure OpenAI:", error);
-    // Re-throw a more specific error to be handled by the calling flow
     if (error instanceof z.ZodError) {
       throw new Error(`Azure OpenAI response failed Zod validation: ${error.message}`);
     }
@@ -74,7 +100,6 @@ export async function callAzureOpenAIChat(
   messages: Array<{ role: 'system' | 'user' | 'model'; content: string }>
 ): Promise<string> {
     const chatMessages = messages.map(m => {
-        // The 'model' role in genkit maps to 'assistant' in openai
         const role = m.role === 'model' ? 'assistant' : m.role;
         return { role, content: m.content };
     })

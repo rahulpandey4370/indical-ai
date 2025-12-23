@@ -128,17 +128,16 @@ const generateInsightsFlow = ai.defineFlow(
     const modelId = context?.modelId || 'gemini-2.5-flash';
     const model = `googleai/${modelId}`;
 
-    const prompt = ai.definePrompt({
-        name: 'generateInsightsPrompt',
-        input: { schema: GenerateInsightsInputSchema },
-        output: { schema: GenerateInsightsOutputSchema },
-        prompt: universalPromptTemplate,
-    });
-
     let output;
     if (modelId === 'gpt-5.2-chat') {
-        output = await callAzureOpenAI(prompt, input, GenerateInsightsOutputSchema);
+        output = await callAzureOpenAI(universalPromptTemplate, input, GenerateInsightsOutputSchema);
     } else {
+        const prompt = ai.definePrompt({
+            name: 'generateInsightsPrompt',
+            input: { schema: GenerateInsightsInputSchema },
+            output: { schema: GenerateInsightsOutputSchema },
+            prompt: universalPromptTemplate,
+        });
         const genkitResponse = await prompt(input, { model });
         output = genkitResponse.output;
     }

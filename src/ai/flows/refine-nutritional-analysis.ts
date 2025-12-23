@@ -65,36 +65,31 @@ Your response must be a valid JSON object that strictly follows this format:
 }
 `;
 
+const AzureOutputSchema = z.object({
+    refinedAnalysis: NutritionalAnalysisSchema,
+    responseText: z.string(),
+});
+
 const refineNutritionalAnalysisFlow = ai.defineFlow(
   {
     name: 'refineNutritionalAnalysisFlow',
     inputSchema: RefineNutritionalAnalysisInputSchema,
-    outputSchema: z.object({
-      refinedAnalysis: NutritionalAnalysisSchema,
-      responseText: z.string(),
-    }),
+    outputSchema: AzureOutputSchema,
   },
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
     const model = `googleai/${modelId}`;
-
-    const prompt = ai.definePrompt({
-        name: 'refineNutritionalAnalysisPrompt',
-        input: {schema: RefineNutritionalAnalysisInputSchema},
-        output: {schema: z.object({
-            refinedAnalysis: NutritionalAnalysisSchema,
-            responseText: z.string(),
-        })},
-        prompt: universalPromptTemplate,
-    });
     
     let output;
     if (modelId === 'gpt-5.2-chat') {
-        output = await callAzureOpenAI(prompt, input, z.object({
-            refinedAnalysis: NutritionalAnalysisSchema,
-            responseText: z.string(),
-        }));
+        output = await callAzureOpenAI(universalPromptTemplate, input, AzureOutputSchema);
     } else {
+        const prompt = ai.definePrompt({
+            name: 'refineNutritionalAnalysisPrompt',
+            input: {schema: RefineNutritionalAnalysisInputSchema},
+            output: {schema: AzureOutputSchema},
+            prompt: universalPromptTemplate,
+        });
         const genkitResponse = await prompt(input, { model });
         output = genkitResponse.output;
     }

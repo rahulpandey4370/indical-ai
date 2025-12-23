@@ -44,7 +44,8 @@ CRITICAL INSTRUCTIONS FOR ALL MODES:
   Image to analyze:
   {{media url=photoDataUri}}
 
-{{else if isBarcodeMode}}
+{{/if}}
+{{#if isBarcodeMode}}
   You are analyzing a photo of a packaged food product with a barcode.
   - Identify the product name from the packaging.
   - Extract all available nutrition information from the nutrition label.
@@ -54,7 +55,8 @@ CRITICAL INSTRUCTIONS FOR ALL MODES:
   Image to analyze:
   {{media url=photoDataUri}}
 
-{{else if isTextMode}}
+{{/if}}
+{{#if isTextMode}}
   You are analyzing a meal described in text.
   - The user may describe a single meal or multiple meals (e.g., "for breakfast I had..., for lunch I had...").
   - Your primary goal is to parse the text and identify every individual food item mentioned across all meals.
@@ -77,19 +79,6 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
     const modelId = context?.modelId || 'gemini-2.5-flash';
     const model = `googleai/${modelId}`;
 
-    const prompt = ai.definePrompt({
-        name: 'analyzeIndianFoodImagePrompt',
-        input: {schema: z.object({
-          photoDataUri: z.string().optional(),
-          textInput: z.string().optional(),
-          isMealMode: z.boolean().optional(),
-          isBarcodeMode: z.boolean().optional(),
-          isTextMode: z.boolean().optional(),
-        })},
-        output: {schema: AnalyzeIndianFoodImageOutputSchema},
-        prompt: universalPromptTemplate,
-    });
-
     const promptInput = {
       photoDataUri: input.photoDataUri,
       textInput: input.textInput,
@@ -100,8 +89,20 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
       
     let output;
     if (modelId === 'gpt-5.2-chat') {
-        output = await callAzureOpenAI(prompt, promptInput, AnalyzeIndianFoodImageOutputSchema);
+        output = await callAzureOpenAI(universalPromptTemplate, promptInput, AnalyzeIndianFoodImageOutputSchema);
     } else {
+        const prompt = ai.definePrompt({
+            name: 'analyzeIndianFoodImagePrompt',
+            input: {schema: z.object({
+              photoDataUri: z.string().optional(),
+              textInput: z.string().optional(),
+              isMealMode: z.boolean().optional(),
+              isBarcodeMode: z.boolean().optional(),
+              isTextMode: z.boolean().optional(),
+            })},
+            output: {schema: AnalyzeIndianFoodImageOutputSchema},
+            prompt: universalPromptTemplate,
+        });
         const genkitResponse = await prompt(promptInput, { model });
         output = genkitResponse.output;
     }

@@ -60,17 +60,16 @@ const analyzeMealCompositionFlow = ai.defineFlow(
     const modelId = context?.modelId || 'gemini-2.5-flash';
     const model = `googleai/${modelId}`;
     
-    const prompt = ai.definePrompt({
-      name: 'analyzeMealCompositionPrompt',
-      input: { schema: AnalyzeMealCompositionInputSchema },
-      output: { schema: AnalyzeMealCompositionOutputSchema },
-      prompt: universalPromptTemplate,
-    });
-
     let output;
     if (modelId === 'gpt-5.2-chat') {
-        output = await callAzureOpenAI(prompt, input, AnalyzeMealCompositionOutputSchema);
+        output = await callAzureOpenAI(universalPromptTemplate, input, AnalyzeMealCompositionOutputSchema);
     } else {
+        const prompt = ai.definePrompt({
+          name: 'analyzeMealCompositionPrompt',
+          input: { schema: AnalyzeMealCompositionInputSchema },
+          output: { schema: AnalyzeMealCompositionOutputSchema },
+          prompt: universalPromptTemplate,
+        });
         const genkitResponse = await prompt(input, { model });
         output = genkitResponse.output;
     }
