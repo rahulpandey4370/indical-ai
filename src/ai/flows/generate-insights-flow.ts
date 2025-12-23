@@ -6,8 +6,8 @@
 
 import { ai } from '@/ai/index';
 import { z } from 'genkit';
-import { ModelId } from '@/lib/types';
-import { AnalysisItemSchema, GenerateInsightsOutputSchema as InsightsOutputSchema } from '@/lib/schemas';
+import { ModelId, GenerateInsightsOutputSchema as InsightsOutputSchema } from '@/lib/types';
+import { AnalysisItemSchema } from '@/lib/schemas';
 import { callAzureOpenAI } from '@/lib/azure-openai';
 
 const BMRSchema = z.object({
