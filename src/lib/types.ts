@@ -5,7 +5,7 @@ import {
   AnalyzeMealCompositionInputSchema as AnalyzeMealCompositionInputZodSchema
 } from './schemas';
 
-export const modelNames = ['gemini-2.5-flash', 'gpt-5.2-chat'] as const;
+export const modelNames = ['gemini-2.5-flash', 'gemini-3-flash-preview', 'gemini-2.5-flash-lite', 'gpt-5.2-chat'] as const;
 export type ModelId = (typeof modelNames)[number];
 
 

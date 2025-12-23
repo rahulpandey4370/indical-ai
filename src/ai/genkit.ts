@@ -2,12 +2,14 @@
 
 import {genkit, ModelReference} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
-import {openAI} from '@genkit-ai/compat-oai/openai';
+import {openAI} from '@genkit-ai/compat-oai';
 import {z} from 'zod';
 import {ai} from './index';
 
 // --- Model Definitions ---
 const gemini25Flash = googleAI.model('gemini-2.5-flash');
+const gemini3FlashPreview = googleAI.model('gemini-3-flash-preview');
+const gemini25FlashLite = googleAI.model('gemini-2.5-flash-lite');
 
 // Azure OpenAI Model
 const gpt52Chat = openAI.model('gpt-5.2-chat');
@@ -52,6 +54,8 @@ const googleSearchTool = ai.defineTool(
 // Map model IDs to their references
 const modelMap: Record<string, ModelReference<any>> = {
   'gemini-2.5-flash': gemini25Flash,
+  'gemini-3-flash-preview': gemini3FlashPreview,
+  'gemini-2.5-flash-lite': gemini25FlashLite,
   'gpt-5.2-chat': gpt52Chat,
 };
 
