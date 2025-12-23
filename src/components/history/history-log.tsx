@@ -66,13 +66,14 @@ export const AnalysisModal = ({
         if (!isOpen) setAnalysisResult(null);
       }}>
         <DialogContent className="max-w-lg p-0">
-          <DialogHeader className="p-6">
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
               <Sparkles className="text-primary"/>
               {title}
             </DialogTitle>
-             <DialogDescription>
-                {description}
+             <DialogDescription className="flex justify-between items-center">
+                <span>{description}</span>
+                {analysisResult?.modelId && <Badge variant="outline" className='font-mono text-xs'>{analysisResult.modelId}</Badge>}
              </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[70vh]">

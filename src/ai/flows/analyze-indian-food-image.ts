@@ -83,7 +83,8 @@ const analyzeIndianFoodImagePrompt = ai.definePrompt({
 =======
   modelId: ModelId
 ): Promise<AnalyzeIndianFoodImageOutput> {
-  return analyzeIndianFoodImageFlow(input, { context: { modelId } });
+  const result = await analyzeIndianFoodImageFlow(input, { context: { modelId } });
+  return { ...result, modelId };
 }
 
 const geminiPromptTemplate = `
@@ -130,11 +131,38 @@ You must ALWAYS return a valid JSON object that strictly follows the provided ou
 `;
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
-const gemmaPromptTemplate = `${geminiPromptTemplate}
-The 'macros' for each item must be a nested JSON object like this: "macros": { "protein": 10, "carbs": 20, "fat": 5 }.
-The 'total_macros' must also be a nested JSON object.
-You MUST also include a 'confidence_score' field (a number between 0 and 1 representing your certainty) and a 'food_type' field ('prepared' or 'packaged').
-You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
+const gemmaPromptTemplate = `You are an expert Indian nutritionist. Your task is to analyze the provided input and return a detailed nutritional breakdown as a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks.
+
+Here is the input to analyze:
+{{#if isMealMode}}
+  Image of a meal. Identify all items.
+  {{media url=photoDataUri}}
+{{else if isBarcodeMode}}
+  Image of a packaged food. Identify it.
+  {{media url=photoDataUri}}
+{{else if isTextMode}}
+  Text describing a meal: "{{{textInput}}}"
+{{/if}}
+
+Your JSON output MUST have the following structure:
+{
+  "items": [
+    {
+      "name": "...",
+      "weight": ...,
+      "unit": "g" or "ml",
+      "calories": ...,
+      "macros": { "protein": ..., "carbs": ..., "fat": ... }
+    }
+  ],
+  "total_calories": ...,
+  "total_macros": { "protein": ..., "carbs": ..., "fat": ... },
+  "confidence_score": (a number 0-1),
+  "food_type": "prepared" or "packaged",
+  "summary": "A 2-5 word meal summary"
+}
+Ensure all fields are populated correctly. The 'macros' for each item must be a nested JSON object. 'total_macros' must also be a nested object. Calculate totals based on all items.
+`;
 
 const analyzeIndianFoodImageFlow = ai.defineFlow(
   {
@@ -182,9 +210,20 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
       if (rawJson.startsWith('```json')) {
         rawJson = rawJson.substring(7, rawJson.length - 3).trim();
       }
+<<<<<<< HEAD
 >>>>>>> d4027d7 (Now got this)
       const parsed = JSON.parse(rawJson);
       return AnalyzeIndianFoodImageOutputSchema.parse(parsed);
+=======
+      try {
+        const parsed = JSON.parse(rawJson);
+        return AnalyzeIndianFoodImageOutputSchema.parse(parsed);
+      } catch(e) {
+        console.error("Failed to parse Gemma JSON:", rawJson);
+        throw new Error(`Gemma returned invalid JSON. Raw output: ${rawJson}`);
+      }
+
+>>>>>>> 8f435a2 (Did you just add a default response for gemma because in the text input)
 
     } else { // Is a Gemini model
         const prompt = ai.definePrompt({

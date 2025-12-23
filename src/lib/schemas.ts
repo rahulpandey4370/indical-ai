@@ -21,6 +21,7 @@ export const AnalyzeIndianFoodImageOutputSchema = z.object({
   confidence_score: z.number().min(0).max(1).describe('A score from 0 to 1 indicating the AI\'s confidence in the analysis.'),
   food_type: z.enum(['prepared', 'packaged']).describe('Type of food.'),
   summary: z.string().describe('A short, engaging summary of all items found. Should be 2-3 words, max 5.'),
+  modelId: z.string().optional().describe('The model used for analysis.'),
 });
 
 export const AnalyzeIndianFoodImageInputSchema = z.object({
@@ -65,5 +66,6 @@ export const AnalyzeMealCompositionOutputSchema = z.object({
   whatWentWell: z.array(z.string()).describe("A list of 2-3 positive points about the meal composition. This must be populated."),
   areasForImprovement: z.array(z.string()).describe("A list of 2-3 actionable suggestions for improvement. This must be populated."),
   mealRating: z.number().min(1).max(10).describe("An overall rating for the meal from 1 to 10 based on its nutritional balance relative to the meal type."),
-  detailedNutrients: z.array(NutrientDetailSchema).describe("A detailed list of macro and micro nutrients.")
+  detailedNutrients: z.array(NutrientDetailSchema).describe("A detailed list of macro and micro nutrients."),
+  modelId: z.string().optional().describe('The model used for analysis.'),
 });

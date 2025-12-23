@@ -26,6 +26,7 @@ export type RefineNutritionalAnalysisInput = z.infer<
 const RefineNutritionalAnalysisOutputSchema = z.object({
   refinedAnalysis: NutritionalAnalysisSchema.describe('The refined nutritional analysis after applying the instructions.'),
   responseText: z.string().describe('A short, friendly message confirming the update.'),
+  modelId: z.string().optional().describe('The model used for refinement.'),
 });
 export type RefineNutritionalAnalysisOutput = z.infer<
   typeof RefineNutritionalAnalysisOutputSchema
@@ -72,7 +73,8 @@ const refineNutritionalAnalysisPrompt = ai.definePrompt({
 =======
   modelId: ModelId
 ): Promise<RefineNutritionalAnalysisOutput> {
-  return refineNutritionalAnalysisFlow(input, { context: { modelId } });
+  const result = await refineNutritionalAnalysisFlow(input, { context: { modelId } });
+  return { ...result, modelId };
 }
 
 const geminiPromptTemplate = `
@@ -101,16 +103,45 @@ Your response must be a valid JSON object that strictly follows this format:
 `;
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
-const gemmaPromptTemplate = `${geminiPromptTemplate}
-The 'refinedAnalysis' field MUST be a nested JSON object containing the full, updated analysis.
-You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
+const gemmaPromptTemplate = `You are a nutritional assistant. Refine the nutrition breakdown below based on the user's feedback and return a single, raw JSON object. Do not add any other text.
+
+Current analysis:
+{{{json initialAnalysis}}}
+
+User's instructions:
+"{{{refinementInstruction}}}"
+
+Your JSON output MUST have the following structure:
+{
+  "refinedAnalysis": {
+    "items": [
+      {
+        "name": "...",
+        "weight": ...,
+        "unit": "g" or "ml",
+        "calories": ...,
+        "macros": { "protein": ..., "carbs": ..., "fat": ... }
+      }
+    ],
+    "total_calories": ...,
+    "total_macros": { "protein": ..., "carbs": ..., "fat": ... },
+    "confidence_score": ...,
+    "food_type": "prepared" or "packaged",
+    "summary": "..."
+  },
+  "responseText": "A short, friendly message confirming your changes."
+}
+Update the 'refinedAnalysis' field with the corrected data, recalculating all totals. Do not wrap the JSON in markdown.`;
 
 
 const refineNutritionalAnalysisFlow = ai.defineFlow(
   {
     name: 'refineNutritionalAnalysisFlow',
     inputSchema: RefineNutritionalAnalysisInputSchema,
-    outputSchema: RefineNutritionalAnalysisOutputSchema,
+    outputSchema: z.object({
+      refinedAnalysis: NutritionalAnalysisSchema,
+      responseText: z.string(),
+    }),
   },
 <<<<<<< HEAD
   async (input) => {
@@ -130,8 +161,13 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
         if (rawJson.startsWith('```json')) {
           rawJson = rawJson.substring(7, rawJson.length - 3).trim();
         }
-        const parsed = JSON.parse(rawJson);
-        return RefineNutritionalAnalysisOutputSchema.parse(parsed);
+        try {
+            const parsed = JSON.parse(rawJson);
+            return z.object({ refinedAnalysis: NutritionalAnalysisSchema, responseText: z.string() }).parse(parsed);
+        } catch(e) {
+            console.error("Failed to parse Gemma JSON:", rawJson);
+            throw new Error(`Gemma returned invalid JSON. Raw output: ${rawJson}`);
+        }
 
 <<<<<<< HEAD
     const {output} = await prompt(input);
@@ -143,7 +179,10 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
         const prompt = ai.definePrompt({
             name: 'refineNutritionalAnalysisPrompt',
             input: {schema: RefineNutritionalAnalysisInputSchema},
-            output: {schema: RefineNutritionalAnalysisOutputSchema},
+            output: {schema: z.object({
+                refinedAnalysis: NutritionalAnalysisSchema,
+                responseText: z.string(),
+            })},
             prompt: geminiPromptTemplate,
         });
 

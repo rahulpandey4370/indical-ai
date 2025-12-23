@@ -58,7 +58,8 @@ const analyzeMealCompositionPrompt = ai.definePrompt({
 =======
   modelId: ModelId,
 ): Promise<AnalyzeMealCompositionOutput> {
-  return analyzeMealCompositionFlow(input, { context: { modelId } });
+  const result = await analyzeMealCompositionFlow(input, { context: { modelId } });
+  return { ...result, modelId };
 }
 
 const geminiPromptTemplate = `
@@ -88,11 +89,45 @@ Analysis Steps:
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const analyzeMealCompositionFlow = ai.defineFlow({
 =======
 const gemmaPromptTemplate = `${geminiPromptTemplate}
 The 'detailedNutrients' must be an array of nested JSON objects, each with a name, value, and unit field. Example: {"name": "Protein", "value": 25, "unit": "g"}.
 You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
+=======
+const gemmaPromptTemplate = `You are an expert Indian nutritionist. Analyze the meal composition below and return a single, raw JSON object and NOTHING else.
+
+User's Daily Goals:
+- Calories: {{{userGoals.calories}}}
+- Protein: {{{userGoals.protein}}}g
+- Carbs: {{{userGoals.carbs}}}g
+- Fat: {{{userGoals.fat}}}g
+
+Meal to Analyze ({{mealType}}):
+{{{json mealEntries}}}
+
+Your JSON output MUST have the following structure:
+{
+  "title": "A catchy, encouraging title for the analysis",
+  "overallAssessment": "A brief, one-sentence overall assessment of the meal.",
+  "whatWentWell": ["A list of 2-3 positive points."],
+  "areasForImprovement": ["A list of 2-3 actionable suggestions for improvement."],
+  "mealRating": (a rating from 1 to 10),
+  "detailedNutrients": [
+    { "name": "Calories", "value": ..., "unit": "kcal" },
+    { "name": "Protein", "value": ..., "unit": "g" },
+    { "name": "Carbohydrates", "value": ..., "unit": "g" },
+    { "name": "Fat", "value": ..., "unit": "g" },
+    { "name": "Vitamin C", "value": ..., "unit": "mg" },
+    { "name": "Vitamin D", "value": ..., "unit": "IU" },
+    { "name": "Vitamin B12", "value": ..., "unit": "mcg" },
+    { "name": "Iron", "value": ..., "unit": "mg" },
+    { "name": "Magnesium", "value": ..., "unit": "mg" }
+  ]
+}
+Ensure 'detailedNutrients' is an array of nested JSON objects, each with a name, value, and unit field. Do not wrap the JSON in markdown backticks.`;
+>>>>>>> 8f435a2 (Did you just add a default response for gemma because in the text input)
 
 
 const analyzeMealCompositionFlow = ai.defineFlow(
@@ -122,8 +157,13 @@ const analyzeMealCompositionFlow = ai.defineFlow(
         if (rawJson.startsWith('```json')) {
           rawJson = rawJson.substring(7, rawJson.length - 3).trim();
         }
-        const parsed = JSON.parse(rawJson);
-        return AnalyzeMealCompositionOutputSchema.parse(parsed);
+        try {
+            const parsed = JSON.parse(rawJson);
+            return AnalyzeMealCompositionOutputSchema.parse(parsed);
+        } catch(e) {
+            console.error("Failed to parse Gemma JSON:", rawJson);
+            throw new Error(`Gemma returned invalid JSON. Raw output: ${rawJson}`);
+        }
 
     } else { // Is a Gemini model
         const prompt = ai.definePrompt({

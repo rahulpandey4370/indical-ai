@@ -12,6 +12,7 @@ import type {
   HistoryEntry,
   ChatMessage,
   MealType,
+  RefinedNutritionalAnalysis,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { useModel } from '@/hooks/use-model';
+import { Badge } from '../ui/badge';
 
 export function AnalysisPanel({
   closePanel,
@@ -54,6 +56,8 @@ export function AnalysisPanel({
   const [mealType, setMealType] = useState<MealType>(existingEntry?.mealType || 'Lunch');
   const [mealName, setMealName] = useState<string>(existingEntry?.mealName || '');
   const [entryDate, setEntryDate] = useState<Date>(new Date(existingEntry.timestamp));
+  const [refinementModel, setRefinementModel] = useState<string | undefined>(undefined);
+
 
   const [isCommitPending, startCommitTransition] = useTransition();
   const { toast } = useToast();
@@ -127,10 +131,19 @@ export function AnalysisPanel({
       }, model);
 =======
       }, selectedModel);
+<<<<<<< HEAD
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
       if (response.refinedAnalysis) {
         setAnalysisResult(response.refinedAnalysis);
+=======
+      
+      const updatedAnalysis: NutritionalAnalysis = {
+        ...response.refinedAnalysis,
+        modelId: response.modelId
+>>>>>>> 8f435a2 (Did you just add a default response for gemma because in the text input)
       }
+
+      setAnalysisResult(updatedAnalysis);
       setChatMessages(prev => [...prev, { role: 'model', text: response.responseText }]);
     } catch (e: any) {
       const errorMessage = e.message || "Sorry, I couldn't refine that right now.";
@@ -309,6 +322,7 @@ export function AnalysisPanel({
                       <div className="flex items-center gap-3">
                         <Bot className="text-primary" size={24} />
                         <h4 className="text-[11px] font-black uppercase tracking-[0.2em]">AI Dialogue</h4>
+                         {analysisResult.modelId && <Badge variant="outline" className='font-mono text-xs'>{analysisResult.modelId}</Badge>}
                       </div>
                       <span className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />

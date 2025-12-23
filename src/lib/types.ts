@@ -30,11 +30,13 @@ export type NutritionalAnalysis = {
   confidence_score: number;
   food_type: 'prepared' | 'packaged';
   summary: string;
+  modelId?: string;
 };
 
 export type RefinedNutritionalAnalysis = {
   refinedAnalysis: NutritionalAnalysis;
   responseText: string;
+  modelId?: string;
 };
 
 export type MealType = 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
