@@ -1,3 +1,4 @@
+
 'use server';
 
 import {genkit, ModelReference} from 'genkit';
@@ -7,9 +8,9 @@ import {ai} from './index';
 
 // --- Model Definitions ---
 const gemini25Flash = googleAI.model('gemini-2.5-flash');
-const gemini3Flash = googleAI.model('gemini-3.0-flash');
+const gemini3Flash = googleAI.model('gemini-3-flash-preview');
 const gemini25FlashLite = googleAI.model('gemini-2.5-flash-lite');
-const gemma327b = googleAI.model('gemma-3-27b');
+const gemma327b = googleAI.model('gemma-3-27b-it');
 
 // Define the tool using the global 'ai' object
 const googleSearchTool = ai.defineTool(
@@ -50,9 +51,9 @@ const googleSearchTool = ai.defineTool(
 // Map model IDs to their references
 const modelMap: Record<string, ModelReference<any>> = {
   'gemini-2.5-flash': gemini25Flash,
-  'gemini-3.0-flash': gemini3Flash,
+  'gemini-3-flash-preview': gemini3Flash,
   'gemini-2.5-flash-lite': gemini25FlashLite,
-  'gemma-3-27b': gemma327b,
+  'gemma-3-27b-it': gemma327b,
 };
 
 // This function dynamically configures the global AI object based on a model ID
