@@ -207,7 +207,10 @@ const generateInsightsFlow = ai.defineFlow(
             model,
             promptParams: input,
         });
-        const rawJson = llmResponse.text;
+        let rawJson = llmResponse.text;
+        if (rawJson.startsWith('```json')) {
+          rawJson = rawJson.substring(7, rawJson.length - 3);
+        }
         const parsed = JSON.parse(rawJson);
         return GenerateInsightsOutputSchema.parse(parsed);
 
@@ -217,10 +220,9 @@ const generateInsightsFlow = ai.defineFlow(
             input: { schema: GenerateInsightsInputSchema },
             output: { schema: GenerateInsightsOutputSchema },
             prompt: geminiPromptTemplate,
-            model,
         });
 
-        const { output } = await prompt(input);
+        const { output } = await prompt(input, { model });
         if (!output) {
           throw new Error("Insight generation failed to produce an output.");
         }

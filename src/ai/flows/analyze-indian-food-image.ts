@@ -161,6 +161,7 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
       });
       
 <<<<<<< HEAD
+<<<<<<< HEAD
     const {output} = await prompt({
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
       photoDataUri: input.photoDataUri,
@@ -173,6 +174,13 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
       throw new Error("An unexpected response was received from the server.");
 =======
       const rawJson = llmResponse.text;
+=======
+      let rawJson = llmResponse.text;
+      // Clean the response from markdown fences
+      if (rawJson.startsWith('```json')) {
+        rawJson = rawJson.substring(7, rawJson.length - 3);
+      }
+>>>>>>> d4027d7 (Now got this)
       const parsed = JSON.parse(rawJson);
       return AnalyzeIndianFoodImageOutputSchema.parse(parsed);
 
@@ -188,7 +196,6 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
             })},
             output: {schema: AnalyzeIndianFoodImageOutputSchema},
             prompt: geminiPromptTemplate,
-            model,
         });
           
         const {output} = await prompt({
@@ -197,7 +204,8 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
           isMealMode: input.mode === 'meal',
           isBarcodeMode: input.mode === 'barcode',
           isTextMode: input.mode === 'text',
-        });
+        }, { model });
+
         if (!output) {
           throw new Error("An unexpected response was received from the server.");
         }

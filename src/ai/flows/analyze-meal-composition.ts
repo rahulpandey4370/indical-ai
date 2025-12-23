@@ -117,7 +117,10 @@ const analyzeMealCompositionFlow = ai.defineFlow(
             model,
             promptParams: input,
         });
-        const rawJson = llmResponse.text;
+        let rawJson = llmResponse.text;
+        if (rawJson.startsWith('```json')) {
+          rawJson = rawJson.substring(7, rawJson.length - 3);
+        }
         const parsed = JSON.parse(rawJson);
         return AnalyzeMealCompositionOutputSchema.parse(parsed);
 
@@ -127,10 +130,9 @@ const analyzeMealCompositionFlow = ai.defineFlow(
           input: { schema: AnalyzeMealCompositionInputSchema },
           output: { schema: AnalyzeMealCompositionOutputSchema },
           prompt: geminiPromptTemplate,
-          model,
         });
 
-        const { output } = await prompt(input);
+        const { output } = await prompt(input, { model });
         if (!output) {
           throw new Error("Meal composition analysis failed to produce an output.");
         }

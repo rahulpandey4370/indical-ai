@@ -125,7 +125,10 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
             model,
             promptParams: input,
         });
-        const rawJson = llmResponse.text;
+        let rawJson = llmResponse.text;
+        if (rawJson.startsWith('```json')) {
+          rawJson = rawJson.substring(7, rawJson.length - 3);
+        }
         const parsed = JSON.parse(rawJson);
         return RefineNutritionalAnalysisOutputSchema.parse(parsed);
 
@@ -141,10 +144,9 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
             input: {schema: RefineNutritionalAnalysisInputSchema},
             output: {schema: RefineNutritionalAnalysisOutputSchema},
             prompt: geminiPromptTemplate,
-            model,
         });
 
-        const {output} = await prompt(input);
+        const {output} = await prompt(input, { model });
         if (!output) {
           throw new Error("Refinement failed to produce an output.");
         }
