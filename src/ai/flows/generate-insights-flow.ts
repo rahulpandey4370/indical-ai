@@ -78,6 +78,16 @@ You are a master nutritionist and data analyst.
 Your task is to analyze a user's meal history and provide actionable insights.
 Be encouraging, positive, and focus on simple, effective advice.
 
+CRITICAL INSTRUCTIONS:
+- You must ALWAYS return a valid JSON object that strictly follows the provided output schema. Do not include any extra text or explanations outside of the JSON structure.
+- The final JSON must look like this:
+  {
+    "keyObservations": ["Observation 1", "Observation 2"],
+    "calorieTrendAnalysis": "A summary of calorie trends.",
+    "macroDistributionAnalysis": "A summary of macro distribution."
+  }
+- If 'calculationRequest' is provided, the output MUST also include 'bmrAndMaintenance' and 'suggestedPlans'.
+
 User's current goals:
 - Calories: {{{goals.calories}}}
 - Protein: {{{goals.protein}}}g
@@ -126,12 +136,12 @@ const generateInsightsFlow = ai.defineFlow(
   },
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
-    const model = `googleai/${modelId}`;
-
+    
     let output;
     if (modelId === 'gpt-5.2-chat') {
         output = await callAzureOpenAI(universalPromptTemplate, input, GenerateInsightsOutputSchema);
     } else {
+        const model = `googleai/${modelId}`;
         const prompt = ai.definePrompt({
             name: 'generateInsightsPrompt',
             input: { schema: GenerateInsightsInputSchema },
