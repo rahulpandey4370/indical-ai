@@ -103,15 +103,15 @@ Your response must be a valid JSON object that strictly follows this format:
 `;
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
-const gemmaPromptTemplate = `You are a nutritional assistant. Refine the nutrition breakdown below based on the user's feedback and return a single, raw JSON object. Do not add any other text.
+const gemmaPromptTemplate = `You are a nutritional assistant. Your task is to refine a nutrition breakdown based on the user's feedback and return a single, raw JSON object. Do not add any other text.
 
-Current analysis:
+Here is the current analysis:
 {{{json initialAnalysis}}}
 
-User's instructions:
+Here are the user's instructions for refinement:
 "{{{refinementInstruction}}}"
 
-Your JSON output MUST have the following structure:
+Your JSON output MUST have the following structure. You MUST populate both 'refinedAnalysis' and 'responseText'.
 {
   "refinedAnalysis": {
     "items": [
@@ -131,7 +131,7 @@ Your JSON output MUST have the following structure:
   },
   "responseText": "A short, friendly message confirming your changes."
 }
-Update the 'refinedAnalysis' field with the corrected data, recalculating all totals. Do not wrap the JSON in markdown.`;
+Update the 'refinedAnalysis' object with the corrected data, recalculating all totals. Do not wrap the JSON in markdown.`;
 
 
 const refineNutritionalAnalysisFlow = ai.defineFlow(
@@ -163,9 +163,13 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
         }
         try {
             const parsed = JSON.parse(rawJson);
-            return z.object({ refinedAnalysis: NutritionalAnalysisSchema, responseText: z.string() }).parse(parsed);
+            // The schema here should match what we expect from Gemma's output format
+            return z.object({ 
+                refinedAnalysis: NutritionalAnalysisSchema, 
+                responseText: z.string() 
+            }).parse(parsed);
         } catch(e) {
-            console.error("Failed to parse Gemma JSON:", rawJson);
+            console.error("Failed to parse Gemma JSON:", rawJson, e);
             throw new Error(`Gemma returned invalid JSON. Raw output: ${rawJson}`);
         }
 

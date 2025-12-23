@@ -135,13 +135,13 @@ const gemmaPromptTemplate = `You are an expert Indian nutritionist. Your task is
 
 Here is the input to analyze:
 {{#if isMealMode}}
-  Image of a meal. Identify all items.
+  You are analyzing this image of a meal. Identify all items.
   {{media url=photoDataUri}}
 {{else if isBarcodeMode}}
-  Image of a packaged food. Identify it.
-  {{media url=photoDataUri}}
+  You are analyzing this image of a packaged food item. Identify it.
+  {{media url=photo_data_uri}}
 {{else if isTextMode}}
-  Text describing a meal: "{{{textInput}}}"
+  You are analyzing this text description of a meal: "{{{textInput}}}"
 {{/if}}
 
 Your JSON output MUST have the following structure:
@@ -157,7 +157,7 @@ Your JSON output MUST have the following structure:
   ],
   "total_calories": ...,
   "total_macros": { "protein": ..., "carbs": ..., "fat": ... },
-  "confidence_score": (a number 0-1),
+  "confidence_score": (a number 0-1, estimate how sure you are),
   "food_type": "prepared" or "packaged",
   "summary": "A 2-5 word meal summary"
 }
