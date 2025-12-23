@@ -27,9 +27,12 @@ const NavLink = ({ href, children, icon: Icon }: { href: string, children: React
     const pathname = usePathname();
     const isActive = pathname === href;
     return (
-        <Link href={href} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
+        <Link 
+            href={href} 
+            className={`flex items-center gap-3 rounded-lg transition-colors ${isActive ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20' : 'text-muted-foreground hover:bg-muted hover:text-foreground'} md:px-4 md:py-2 p-2`}
+        >
             <Icon size={20} />
-            <span className="font-bold">{children}</span>
+            <span className="font-bold hidden md:inline">{children}</span>
         </Link>
     )
 }
@@ -134,7 +137,7 @@ export function Nav() {
                 </div>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-2 bg-muted p-1 rounded-xl">
+            <nav className="flex items-center gap-1 bg-muted p-1 rounded-xl">
                <NavLink href="/" icon={Home}>Dashboard</NavLink>
                <NavLink href="/insights" icon={LineChart}>Insights</NavLink>
             </nav>
@@ -150,13 +153,6 @@ export function Nav() {
         </div>
       </header>
 
-      {/* Mobile Nav */}
-      <div className="md:hidden fixed bottom-4 left-4 right-4 z-50">
-         <div className="bg-card/90 backdrop-blur-xl p-2 rounded-2xl shadow-2xl flex items-center justify-around border border-border/50">
-            <Link href="/" className="p-3 rounded-lg data-[active=true]:bg-primary/10 data-[active=true]:text-primary" data-active={usePathname() === '/'}><Home/></Link>
-            <Link href="/insights" className="p-3 rounded-lg data-[active=true]:bg-primary/10 data-[active=true]:text-primary" data-active={usePathname() === '/insights'}><LineChart/></Link>
-         </div>
-      </div>
 
        {/* Assistant Panel */}
       <Sheet open={isAssistantOpen} onOpenChange={setIsAssistantOpen}>
