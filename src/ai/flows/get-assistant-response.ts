@@ -3,7 +3,7 @@
 import { configureAi } from '@/ai/genkit';
 import { ai } from '@/ai/index';
 import { z } from 'genkit';
-import { HistoryEntry, UserGoals, ChatMessage } from '@/lib/types'; // Assuming types are defined here
+import { HistoryEntry, UserGoals, ChatMessage, ModelId } from '@/lib/types'; // Assuming types are defined here
 
 // Schemas for structured input/output
 const ChatMessageSchema = z.object({
@@ -23,6 +23,7 @@ export type GetAssistantResponseInput = z.infer<typeof GetAssistantResponseInput
 
 export async function getAssistantResponse(
   input: GetAssistantResponseInput,
+<<<<<<< HEAD
   modelId: string,
 ): Promise<string> {
   await configureAi(modelId);
@@ -38,6 +39,26 @@ const getAssistantResponseFlow = ai.defineFlow({
 async (input) => {
   const todayMeals = input.history.filter(h => new Date(h.timestamp).toDateString() === new Date(input.currentDate).toDateString());
   const totalCalories = todayMeals.reduce((acc, curr) => acc + curr.analysis.total_calories, 0);
+=======
+  modelId: ModelId
+): Promise<string> {
+  const flowResult = await getAssistantResponseFlow(input, { context: { modelId } });
+  return flowResult;
+}
+
+const getAssistantResponseFlow = ai.defineFlow(
+  {
+    name: 'getAssistantResponseFlow',
+    inputSchema: GetAssistantResponseInputSchema,
+    outputSchema: z.string(),
+  },
+  async (input, { context }) => {
+    const modelId = context?.modelId || 'gemini-2.5-flash';
+    const model = `googleai/${modelId}`;
+
+    const todayMeals = input.history.filter(h => new Date(h.timestamp).toDateString() === input.currentDate);
+    const totalCalories = todayMeals.reduce((acc, curr) => acc + curr.analysis.total_calories, 0);
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
   const systemInstruction = `
     You are IndiCal AI Assistant, a helpful and concise Indian food nutritionist.
@@ -51,6 +72,7 @@ async (input) => {
     content: [{text: m.text}]
   }));
 
+<<<<<<< HEAD
   const llmResponse = await ai.generate({
     history: fullHistory,
     prompt: input.userMessage,
@@ -59,3 +81,13 @@ async (input) => {
   
   return llmResponse.text || "I'm not sure how to respond to that. Could you please rephrase?";
 });
+=======
+    const llmResponse = await ai.generate({
+      model,
+      prompt: fullPrompt,
+    });
+    
+    return llmResponse.text || "I'm not sure how to respond to that. Could you please rephrase?";
+  }
+);
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)

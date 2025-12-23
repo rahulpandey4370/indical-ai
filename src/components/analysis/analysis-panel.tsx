@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { useModel } from '@/hooks/use-model';
 
 export function AnalysisPanel({
   closePanel,
@@ -34,7 +35,11 @@ export function AnalysisPanel({
   existingEntry: HistoryEntry;
 }) {
   const { user } = useUser();
+<<<<<<< HEAD
   const { model, incrementModelUsage } = useModel(); // Get model utility
+=======
+  const { selectedModel } = useModel();
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
   const [imagePreview, setImagePreview] = useState<string | null>(
     existingEntry?.imageUrl || null
   );
@@ -81,7 +86,11 @@ export function AnalysisPanel({
         photoDataUri: existingEntry.imageUrl, // This is now a URL, not base64
         textInput: existingEntry.textInput,
         mode: existingEntry.mode,
+<<<<<<< HEAD
       }, model);
+=======
+      }, selectedModel);
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
       setAnalysisResult(result);
       if (!mealName && existingEntry.mode === 'text' && result.items.length === 1) {
         setMealName(result.items[0].name);
@@ -114,7 +123,11 @@ export function AnalysisPanel({
       const response = await refineNutritionalAnalysis({
         initialAnalysis: analysisResult,
         refinementInstruction: userMsg.text,
+<<<<<<< HEAD
       }, model);
+=======
+      }, selectedModel);
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
       if (response.refinedAnalysis) {
         setAnalysisResult(response.refinedAnalysis);
       }

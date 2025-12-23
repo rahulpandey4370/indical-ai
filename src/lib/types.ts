@@ -5,6 +5,10 @@ import {
   AnalyzeMealCompositionInputSchema as AnalyzeMealCompositionInputZodSchema
 } from './schemas';
 
+export const modelNames = ['gemini-2.5-flash', 'gemini-3-flash', 'gemini-2.5-flash-lite', 'gemma-3-27b'] as const;
+export type ModelId = (typeof modelNames)[number];
+
+
 export type MacroNutrients = {
   protein: number;
   carbs: number;

@@ -1,15 +1,27 @@
 'use client';
 
+<<<<<<< HEAD
 import { Camera, Type, Upload, ScanBarcode, MoreVertical } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useModel } from '@/hooks/use-model';
+=======
+import { Camera, Type, Upload, ScanBarcode, MoreVertical, Bot } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { useModel } from '@/hooks/use-model';
+import { ModelId, modelNames } from '@/lib/types';
+
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
 interface ActionToolbarProps {
   onAddMeal: (mode: 'meal' | 'barcode' | 'upload' | 'text') => void;
 }
 
 export function ActionToolbar({ onAddMeal }: ActionToolbarProps) {
+<<<<<<< HEAD
   const { model, setModel, availableModels, modelUsage } = useModel();
+=======
+  const { selectedModel, setSelectedModel } = useModel();
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-2 w-full max-w-sm">
@@ -23,6 +35,7 @@ export function ActionToolbar({ onAddMeal }: ActionToolbarProps) {
                <Camera size={22}/>
              </button>
              <button onClick={() => onAddMeal('upload')} className="text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10"><Upload size={18}/></button>
+<<<<<<< HEAD
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10">
@@ -44,6 +57,22 @@ export function ActionToolbar({ onAddMeal }: ActionToolbarProps) {
                   </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
+=======
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <button className="text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10"><MoreVertical size={18}/></button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="mb-2 w-56" side="top" align="end">
+                    <DropdownMenuLabel className="flex items-center gap-2"><Bot size={14}/> AI Model</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuRadioGroup value={selectedModel} onValueChange={(val) => setSelectedModel(val as ModelId)}>
+                        {modelNames.map(model => (
+                            <DropdownMenuRadioItem key={model} value={model}>{model}</DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+             </DropdownMenu>
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
         </div>
     </div>
   );

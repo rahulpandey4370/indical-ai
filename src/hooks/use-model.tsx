@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 'use client';
 import { createContext, useContext, ReactNode, useState, useEffect, useCallback } from 'react';
@@ -92,3 +93,45 @@ export function useModel() {
   }
   return context;
 }
+=======
+'use client';
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { ModelId } from '@/lib/types';
+
+const defaultModel: ModelId = 'gemini-2.5-flash';
+
+const ModelContext = createContext<{
+  selectedModel: ModelId;
+  setSelectedModel: (m: ModelId) => void;
+} | undefined>(undefined);
+
+export function ModelProvider({ children }: { children: React.ReactNode }) {
+  const [selectedModel, setSelectedModel] = useState<ModelId>(defaultModel);
+
+  // Load preference from storage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('indical-ai-model') as ModelId;
+    if (saved) {
+      setSelectedModel(saved);
+    }
+  }, []);
+
+  const updateModel = (m: ModelId) => {
+    setSelectedModel(m);
+    localStorage.setItem('indical-ai-model', m);
+  };
+
+  return (
+    <ModelContext.Provider value={{ selectedModel, setSelectedModel: updateModel }}>
+      {children}
+    </ModelContext.Provider>
+  );
+}
+
+export const useModel = () => {
+  const context = useContext(ModelContext);
+  if (!context) throw new Error('useModel must be used within ModelProvider');
+  return context;
+};
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)

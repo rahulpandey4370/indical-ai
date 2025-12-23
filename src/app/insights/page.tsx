@@ -16,6 +16,7 @@ import { subDays, format } from 'date-fns';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useModel } from '@/hooks/use-model';
 
 type TimeRange = '7' | '30' | '90';
 
@@ -37,7 +38,11 @@ const DEFAULT_PLANNER_FORM: PlannerForm = {
 
 export default function InsightsPage() {
   const { user, loading: userLoading } = useUser();
+<<<<<<< HEAD
   const { model, incrementModelUsage } = useModel();
+=======
+  const { selectedModel } = useModel();
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
   const { toast } = useToast();
   
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -86,7 +91,11 @@ export default function InsightsPage() {
             history: filteredHistory,
             goals,
             calculationRequest
+<<<<<<< HEAD
         }, model);
+=======
+        }, selectedModel);
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
         setInsights(result);
         if(calculationRequest) setShowPlanner(false);
     } catch (e: any) {

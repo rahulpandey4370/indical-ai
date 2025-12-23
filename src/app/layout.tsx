@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { UserProvider } from '@/hooks/use-user';
 import { ModelProvider } from '@/hooks/use-model';
 import { Nav } from '@/components/layout/nav';
+import { ModelProvider } from '@/hooks/use-model';
 
 const APP_NAME = "IndiCal AI";
 const APP_DEFAULT_TITLE = "IndiCal AI";

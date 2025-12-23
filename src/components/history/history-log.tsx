@@ -2,7 +2,7 @@
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
-import { HistoryEntry, MealType, UserGoals, AnalyzeMealCompositionOutput, NutrientDetail } from '@/lib/types';
+import { HistoryEntry, MealType, UserGoals, AnalyzeMealCompositionOutput, NutrientDetail, ModelId } from '@/lib/types';
 import { Trash2, ChevronRight, Utensils, Coffee, Sun, Moon, Cookie, BrainCircuit, Sparkles, Star, Award, TrendingDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useModel } from '@/hooks/use-model';
 
 interface HistoryLogProps {
   history: HistoryEntry[];
@@ -143,7 +144,11 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
   goals
 }) => {
   const { toast } = useToast();
+<<<<<<< HEAD
   const { model, incrementModelUsage } = useModel();
+=======
+  const { selectedModel } = useModel();
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
   const [analysisResult, setAnalysisResult] = useState<AnalyzeMealCompositionOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -172,7 +177,11 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
         mealType,
         mealEntries: summarizedEntries,
         userGoals: goals,
+<<<<<<< HEAD
       }, model);
+=======
+      }, selectedModel);
+>>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
       setAnalysisResult(result);
     } catch (e: any) {
       toast({ title: 'Analysis Failed', description: e.message, variant: 'destructive' });
