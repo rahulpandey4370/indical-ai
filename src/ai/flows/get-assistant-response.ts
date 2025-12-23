@@ -1,6 +1,5 @@
 
 'use server';
-import { configureAi } from '@/ai/genkit';
 import { ai } from '@/ai/index';
 import { z } from 'genkit';
 import { HistoryEntry, UserGoals, ChatMessage, ModelId } from '@/lib/types'; // Assuming types are defined here
@@ -23,23 +22,6 @@ export type GetAssistantResponseInput = z.infer<typeof GetAssistantResponseInput
 
 export async function getAssistantResponse(
   input: GetAssistantResponseInput,
-<<<<<<< HEAD
-  modelId: string,
-): Promise<string> {
-  await configureAi(modelId);
-  const flowResult = await getAssistantResponseFlow(input);
-  return flowResult;
-}
-
-const getAssistantResponseFlow = ai.defineFlow({
-  name: 'getAssistantResponseFlow',
-  inputSchema: GetAssistantResponseInputSchema,
-  outputSchema: z.string(),
-},
-async (input) => {
-  const todayMeals = input.history.filter(h => new Date(h.timestamp).toDateString() === new Date(input.currentDate).toDateString());
-  const totalCalories = todayMeals.reduce((acc, curr) => acc + curr.analysis.total_calories, 0);
-=======
   modelId: ModelId
 ): Promise<string> {
   const flowResult = await getAssistantResponseFlow(input, { context: { modelId } });
@@ -58,36 +40,26 @@ const getAssistantResponseFlow = ai.defineFlow(
 
     const todayMeals = input.history.filter(h => new Date(h.timestamp).toDateString() === input.currentDate);
     const totalCalories = todayMeals.reduce((acc, curr) => acc + curr.analysis.total_calories, 0);
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
-  const systemInstruction = `
+    const systemInstruction = `
     You are IndiCal AI Assistant, a helpful and concise Indian food nutritionist.
     The user's daily calorie goal is ${input.goals.calories} kcal. So far today (${new Date(input.currentDate).toDateString()}), they have consumed ${totalCalories} kcal.
     Use the provided meal history for today to answer questions about what they've eaten.
     Keep your responses brief, informative, and encouraging.
   `;
 
-  const fullHistory = input.chatHistory.map(m => ({
-    role: m.role,
-    content: [{text: m.text}]
-  }));
+    const fullHistory = input.chatHistory.map(m => ({
+        role: m.role,
+        content: [{text: m.text}]
+    }));
 
-<<<<<<< HEAD
-  const llmResponse = await ai.generate({
-    history: fullHistory,
-    prompt: input.userMessage,
-    system: systemInstruction,
-  });
-  
-  return llmResponse.text || "I'm not sure how to respond to that. Could you please rephrase?";
-});
-=======
     const llmResponse = await ai.generate({
       model,
-      prompt: fullPrompt,
+      system: systemInstruction,
+      history: fullHistory,
+      prompt: input.userMessage,
     });
     
     return llmResponse.text || "I'm not sure how to respond to that. Could you please rephrase?";
   }
 );
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)

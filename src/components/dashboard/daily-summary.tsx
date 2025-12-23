@@ -61,7 +61,7 @@ export default function DailySummary({
   allHistory,
 }: DailySummaryProps) {
   const { toast } = useToast();
-  const { model, incrementModelUsage } = useModel();
+  const { selectedModel, incrementModelUsage } = useModel();
   const [analysisResult, setAnalysisResult] = useState<AnalyzeMealCompositionOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -90,7 +90,7 @@ export default function DailySummary({
     setIsAnalyzing(true);
     setIsModalOpen(true);
     setAnalysisResult(null);
-    incrementModelUsage(model);
+    incrementModelUsage(selectedModel);
     try {
       const summarizedEntries = entries.map(entry => ({
         mealName: entry.mealName || entry.analysis.summary,
@@ -101,7 +101,7 @@ export default function DailySummary({
       const result: any = await generateInsights({
         history: entries,
         goals: goals,
-      }, model);
+      }, selectedModel);
       
       // Adapt the output of generateInsights to what AnalysisModal expects
       const adaptedResult: AnalyzeMealCompositionOutput = {

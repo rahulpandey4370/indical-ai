@@ -2,7 +2,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useUser } from '@/hooks/use-user';
-import { useModel } from '@/hooks/use-model';
 import { getHistory, getGoals, saveGoals } from '@/lib/actions';
 import type { HistoryEntry, UserGoals, GenerateInsightsOutput, GenerateInsightsInput } from '@/lib/types';
 import { generateInsights } from '@/ai/flows/generate-insights-flow';
@@ -38,11 +37,7 @@ const DEFAULT_PLANNER_FORM: PlannerForm = {
 
 export default function InsightsPage() {
   const { user, loading: userLoading } = useUser();
-<<<<<<< HEAD
-  const { model, incrementModelUsage } = useModel();
-=======
-  const { selectedModel } = useModel();
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
+  const { selectedModel, incrementModelUsage } = useModel();
   const { toast } = useToast();
   
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -79,7 +74,7 @@ export default function InsightsPage() {
 
     setInsightsLoading(true);
     setInsightsError(null);
-    incrementModelUsage(model);
+    incrementModelUsage(selectedModel);
     try {
         const filteredHistory = history.filter(entry => {
           const entryDate = new Date(entry.timestamp);
@@ -91,11 +86,7 @@ export default function InsightsPage() {
             history: filteredHistory,
             goals,
             calculationRequest
-<<<<<<< HEAD
-        }, model);
-=======
         }, selectedModel);
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
         setInsights(result);
         if(calculationRequest) setShowPlanner(false);
     } catch (e: any) {

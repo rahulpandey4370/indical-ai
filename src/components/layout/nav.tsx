@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
-import { useModel } from '@/hooks/use-model';
 import { getAssistantResponse } from '@/ai/flows/get-assistant-response';
 import { getHistory, getGoals } from '@/lib/actions';
 import { HistoryEntry, UserGoals, ChatMessage } from '@/lib/types';
@@ -40,11 +39,7 @@ export function Nav() {
   const [darkMode, setDarkMode] = useState(false);
   const { user } = useUser();
   const { toast } = useToast();
-<<<<<<< HEAD
-  const { model, incrementModelUsage } = useModel();
-=======
   const { selectedModel } = useModel();
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
   // Assistant State
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -96,7 +91,7 @@ export function Nav() {
     setAssistantChat(currentChat);
     setAssistantInput("");
     setProcessingAssistant(true);
-    incrementModelUsage(model);
+
     try {
       // Pass only today's history to the assistant
       const today = new Date().toDateString();
@@ -107,13 +102,8 @@ export function Nav() {
         history: todayHistory,
         goals: goals,
         chatHistory: currentChat.slice(0, -1),
-<<<<<<< HEAD
-        currentDate: new Date().toISOString(),
-      }, model);
-=======
         currentDate: new Date().toDateString()
       }, selectedModel);
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
       setAssistantChat(prev => [...prev, { role: 'model', text: response }]);
     } catch(e: any) {
         setAssistantChat(prev => [...prev, { role: 'model', text: "Sorry, I'm having trouble connecting right now." }]);
