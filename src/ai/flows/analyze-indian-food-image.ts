@@ -133,6 +133,7 @@ You must ALWAYS return a valid JSON object that strictly follows the provided ou
 const gemmaPromptTemplate = `${geminiPromptTemplate}
 The 'macros' for each item must be a nested JSON object like this: "macros": { "protein": 10, "carbs": 20, "fat": 5 }.
 The 'total_macros' must also be a nested JSON object.
+You MUST also include a 'confidence_score' field (a number between 0 and 1 representing your certainty) and a 'food_type' field ('prepared' or 'packaged').
 You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
 
 const analyzeIndianFoodImageFlow = ai.defineFlow(
