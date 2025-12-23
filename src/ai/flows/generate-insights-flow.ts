@@ -125,12 +125,7 @@ const generateInsightsFlow = ai.defineFlow(
   },
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
-    let model;
-    if (modelId.startsWith('gpt')) {
-        model = `azure/${modelId}`;
-    } else {
-        model = `googleai/${modelId}`;
-    }
+    const model = `googleai/${modelId}`;
 
     const prompt = ai.definePrompt({
         name: 'generateInsightsPrompt',
