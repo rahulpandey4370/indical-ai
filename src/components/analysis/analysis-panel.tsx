@@ -272,7 +272,7 @@ export function AnalysisPanel({
   };
 
   return (
-    <div className="flex flex-col h-full max-h-screen bg-background">
+    <div className="flex flex-col h-full max-h-screen bg-background z-60">
       <header className="p-4 border-b flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => closePanel()}>
@@ -280,25 +280,12 @@ export function AnalysisPanel({
           </Button>
           <h2 className="text-lg font-bold tracking-tight">Analysis</h2>
         </div>
-        <Button
-          onClick={handleCommit}
-          disabled={!analysisResult || isAnalyzing || isCommitPending}
-          size="sm"
-        >
-          {isCommitPending ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <>
-              <Save className="mr-2" /> Commit
-            </>
-          )}
-        </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto pb-24">
+      <div className="flex-1 overflow-y-auto pb-28">
+        <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto">
           {imagePreview && (
-            <div className="rounded-xl overflow-hidden border shadow-sm aspect-[3/2] md:aspect-video relative">
+            <div className="rounded-xl overflow-hidden border shadow-sm aspect-[4/3] md:aspect-video relative">
               <Image
                 src={imagePreview}
                 alt="Meal analysis"
@@ -325,7 +312,7 @@ export function AnalysisPanel({
       </div>
       
       <div className="sticky bottom-0 p-4 border-t bg-background/80 backdrop-blur-sm">
-        <div className="relative max-w-4xl mx-auto">
+        <div className="relative max-w-4xl mx-auto flex items-center gap-2">
           <Input
             type="text"
             value={refinementInput}
@@ -333,13 +320,27 @@ export function AnalysisPanel({
             onKeyDown={(e) => e.key === 'Enter' && handleRefine()}
             placeholder={analysisResult ? "e.g., 'The portion of rice was smaller'" : "Waiting for analysis to complete..."}
             disabled={!analysisResult || isRefining}
-            className="pr-12 h-12"
+            className="pr-12 h-12 flex-1"
           />
-          <Button onClick={handleRefine} disabled={!analysisResult || isRefining || !refinementInput} size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9">
+          <Button onClick={handleRefine} disabled={!analysisResult || isRefining || !refinementInput} size="icon" className="h-12 w-12 shrink-0">
               {isRefining ? <Loader2 className="animate-spin" /> : <Send />}
+          </Button>
+          <Button
+            onClick={handleCommit}
+            disabled={!analysisResult || isAnalyzing || isCommitPending}
+            size="lg"
+            className="h-12 shrink-0"
+          >
+            {isCommitPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
           </Button>
         </div>
       </div>
     </div>
   );
 }
+
+    
