@@ -29,10 +29,29 @@ const universalPromptTemplate = `
 You are an expert Indian nutritionist. Your task is to analyze the provided input and return a detailed nutritional breakdown in JSON format.
 
 CRITICAL INSTRUCTIONS FOR ALL MODES:
+- You must ALWAYS return a valid JSON object that strictly follows the provided output schema. Do not include any extra text or explanations outside of the JSON structure.
 - For each item, you MUST provide its name, estimated weight/volume, unit ('g' for solids, 'ml' for liquids), estimated calories, and a full macronutrient breakdown (protein, carbs, fat).
 - Always sum up the totals for all items.
 - For the 'summary' field, you MUST generate a short, descriptive name for the meal, ideally 2-3 words, and a maximum of 5 words. (e.g., "Chicken Curry Lunch", "Morning Tea & Biscuits"). Do NOT write a long sentence.
-- You must ALWAYS return a valid JSON object that strictly follows the provided output schema. Do not include any extra text or explanations outside of the JSON structure.
+- You must set a 'confidence_score' between 0 and 1.
+- The final JSON must look like this:
+  {
+    "items": [
+      {
+        "name": "Example Item",
+        "weight": 100,
+        "unit": "g",
+        "calories": 250,
+        "macros": { "protein": 20, "carbs": 10, "fat": 15 }
+      }
+    ],
+    "total_calories": 250,
+    "total_macros": { "protein": 20, "carbs": 10, "fat": 15 },
+    "confidence_score": 0.9,
+    "food_type": "prepared",
+    "summary": "Example Meal"
+  }
+
 
 {{#if isMealMode}}
   You are analyzing a photo of a meal.
@@ -77,8 +96,7 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
   },
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
-    const model = `googleai/${modelId}`;
-
+    
     const promptInput = {
       photoDataUri: input.photoDataUri,
       textInput: input.textInput,
@@ -91,6 +109,7 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
     if (modelId === 'gpt-5.2-chat') {
         output = await callAzureOpenAI(universalPromptTemplate, promptInput, AnalyzeIndianFoodImageOutputSchema);
     } else {
+        const model = `googleai/${modelId}`;
         const prompt = ai.definePrompt({
             name: 'analyzeIndianFoodImagePrompt',
             input: {schema: z.object({
