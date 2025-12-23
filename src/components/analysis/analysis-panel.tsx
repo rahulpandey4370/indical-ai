@@ -272,7 +272,7 @@ export function AnalysisPanel({
   };
 
   return (
-    <div className="flex flex-col h-full max-h-screen">
+    <div className="flex flex-col h-full max-h-screen bg-background">
       <header className="p-4 border-b flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-10">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => closePanel()}>
@@ -295,10 +295,10 @@ export function AnalysisPanel({
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto pb-24">
           {imagePreview && (
-            <div className="rounded-xl overflow-hidden border shadow-sm aspect-video relative">
+            <div className="rounded-xl overflow-hidden border shadow-sm aspect-[3/2] md:aspect-video relative">
               <Image
                 src={imagePreview}
                 alt="Meal analysis"
@@ -308,38 +308,36 @@ export function AnalysisPanel({
             </div>
           )}
           {renderContent()}
-        </div>
-        
-        {/* Chat / Refinement */}
-        <div className="max-w-4xl mx-auto">
-             <div className="space-y-4">
-                {chatMessages.map((msg, index) => (
-                    <div key={index} className={`flex items-start gap-3 text-sm ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                         {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><Bot className="text-primary" size={16}/></div>}
-                        <div className={`p-3 rounded-2xl max-w-[80%] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-card border shadow-sm rounded-bl-none'}`}>
-                            {msg.text}
-                        </div>
-                    </div>
-                ))}
-                <div ref={analysisChatScrollRef}></div>
-            </div>
 
-            <div className="sticky bottom-0 py-4 bg-background/80 backdrop-blur-sm">
-                <div className="relative">
-                    <Input
-                    type="text"
-                    value={refinementInput}
-                    onChange={(e) => setRefinementInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleRefine()}
-                    placeholder={analysisResult ? "e.g., 'The portion of rice was smaller'" : "Waiting for analysis to complete..."}
-                    disabled={!analysisResult || isRefining}
-                    className="pr-12 h-12"
-                    />
-                    <Button onClick={handleRefine} disabled={!analysisResult || isRefining || !refinementInput} size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9">
-                        {isRefining ? <Loader2 className="animate-spin" /> : <Send />}
-                    </Button>
+          {/* Chat / Refinement */}
+          <div className="space-y-4">
+            {chatMessages.map((msg, index) => (
+                <div key={index} className={`flex items-start gap-3 text-sm ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                      {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><Bot className="text-primary" size={16}/></div>}
+                    <div className={`p-3 rounded-2xl max-w-[80%] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-card border shadow-sm rounded-bl-none'}`}>
+                        {msg.text}
+                    </div>
                 </div>
-            </div>
+            ))}
+            <div ref={analysisChatScrollRef}></div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="sticky bottom-0 p-4 border-t bg-background/80 backdrop-blur-sm">
+        <div className="relative max-w-4xl mx-auto">
+          <Input
+            type="text"
+            value={refinementInput}
+            onChange={(e) => setRefinementInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleRefine()}
+            placeholder={analysisResult ? "e.g., 'The portion of rice was smaller'" : "Waiting for analysis to complete..."}
+            disabled={!analysisResult || isRefining}
+            className="pr-12 h-12"
+          />
+          <Button onClick={handleRefine} disabled={!analysisResult || isRefining || !refinementInput} size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9">
+              {isRefining ? <Loader2 className="animate-spin" /> : <Send />}
+          </Button>
         </div>
       </div>
     </div>
