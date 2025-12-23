@@ -3,6 +3,7 @@
 import { ai } from '@/ai/index';
 import { z } from 'genkit';
 import { HistoryEntry, UserGoals, ChatMessage, ModelId } from '@/lib/types'; // Assuming types are defined here
+import { callAzureOpenAIChat } from '@/lib/azure-openai';
 
 // Schemas for structured input/output
 const ChatMessageSchema = z.object({
@@ -53,13 +54,25 @@ const getAssistantResponseFlow = ai.defineFlow(
         content: [{text: m.text}]
     }));
 
-    const llmResponse = await ai.generate({
-      model,
-      system: systemInstruction,
-      history: fullHistory,
-      prompt: input.userMessage,
-    });
+    let responseText;
+
+    if (modelId === 'gpt-5.2-chat') {
+        const messages = [
+            { role: 'system' as const, content: systemInstruction },
+            ...input.chatHistory.map(m => ({ role: m.role as 'user' | 'model', content: m.text })),
+            { role: 'user' as const, content: input.userMessage }
+        ];
+        responseText = await callAzureOpenAIChat(messages);
+    } else {
+        const llmResponse = await ai.generate({
+          model,
+          system: systemInstruction,
+          history: fullHistory,
+          prompt: input.userMessage,
+        });
+        responseText = llmResponse.text;
+    }
     
-    return llmResponse.text || "I'm not sure how to respond to that. Could you please rephrase?";
+    return responseText || "I'm not sure how to respond to that. Could you please rephrase?";
   }
 );

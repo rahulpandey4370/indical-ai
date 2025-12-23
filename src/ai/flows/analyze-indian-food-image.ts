@@ -12,6 +12,7 @@ import { ai } from '@/ai/index';
 import {z} from 'genkit';
 import { AnalyzeIndianFoodImageOutputSchema, AnalyzeIndianFoodImageInputSchema } from '@/lib/schemas';
 import { ModelId } from '@/lib/types';
+import { callAzureOpenAI } from '@/lib/azure-openai';
 
 export type AnalyzeIndianFoodImageInput = z.infer<typeof AnalyzeIndianFoodImageInputSchema>;
 export type AnalyzeIndianFoodImageOutput = z.infer<typeof AnalyzeIndianFoodImageOutputSchema>;
@@ -31,6 +32,7 @@ CRITICAL INSTRUCTIONS FOR ALL MODES:
 - For each item, you MUST provide its name, estimated weight/volume, unit ('g' for solids, 'ml' for liquids), estimated calories, and a full macronutrient breakdown (protein, carbs, fat).
 - Always sum up the totals for all items.
 - For the 'summary' field, you MUST generate a short, descriptive name for the meal, ideally 2-3 words, and a maximum of 5 words. (e.g., "Chicken Curry Lunch", "Morning Tea & Biscuits"). Do NOT write a long sentence.
+- You must ALWAYS return a valid JSON object that strictly follows the provided output schema. Do not include any extra text or explanations outside of the JSON structure.
 
 {{#if isMealMode}}
   You are analyzing a photo of a meal.
@@ -63,8 +65,6 @@ CRITICAL INSTRUCTIONS FOR ALL MODES:
   Text to analyze: "{{{textInput}}}"
 
 {{/if}}
-
-You must ALWAYS return a valid JSON object that strictly follows the provided output schema. Do not include any extra text or explanations outside of the JSON structure.
 `;
 
 const analyzeIndianFoodImageFlow = ai.defineFlow(
@@ -89,14 +89,23 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
         output: {schema: AnalyzeIndianFoodImageOutputSchema},
         prompt: universalPromptTemplate,
     });
-      
-    const {output} = await prompt({
+
+    const promptInput = {
       photoDataUri: input.photoDataUri,
       textInput: input.textInput,
       isMealMode: input.mode === 'meal',
       isBarcodeMode: input.mode === 'barcode',
       isTextMode: input.mode === 'text',
-    }, { model });
+    };
+      
+    let output;
+    if (modelId === 'gpt-5.2-chat') {
+        output = await callAzureOpenAI(prompt, promptInput, AnalyzeIndianFoodImageOutputSchema);
+    } else {
+        const genkitResponse = await prompt(promptInput, { model });
+        output = genkitResponse.output;
+    }
+
 
     if (!output) {
       throw new Error("An unexpected response was received from the server.");

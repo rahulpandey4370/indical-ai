@@ -8,6 +8,7 @@ import { ai } from '@/ai/index';
 import { z } from 'genkit';
 import { ModelId } from '@/lib/types';
 import { AnalysisItemSchema } from '@/lib/schemas';
+import { callAzureOpenAI } from '@/lib/azure-openai';
 
 const BMRSchema = z.object({
     bmr: z.number().describe("The user's Basal Metabolic Rate (BMR) in calories per day."),
@@ -134,7 +135,14 @@ const generateInsightsFlow = ai.defineFlow(
         prompt: universalPromptTemplate,
     });
 
-    const { output } = await prompt(input, { model });
+    let output;
+    if (modelId === 'gpt-5.2-chat') {
+        output = await callAzureOpenAI(prompt, input, GenerateInsightsOutputSchema);
+    } else {
+        const genkitResponse = await prompt(input, { model });
+        output = genkitResponse.output;
+    }
+
     if (!output) {
       throw new Error("Insight generation failed to produce an output.");
     }

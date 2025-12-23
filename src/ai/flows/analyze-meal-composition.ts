@@ -12,6 +12,7 @@ import { ai } from '@/ai/index';
 import { z } from 'genkit';
 import { AnalyzeMealCompositionInputSchema, AnalyzeMealCompositionOutputSchema } from '@/lib/schemas';
 import { ModelId } from '@/lib/types';
+import { callAzureOpenAI } from '@/lib/azure-openai';
 
 export type AnalyzeMealCompositionInput = z.infer<typeof AnalyzeMealCompositionInputSchema>;
 export type AnalyzeMealCompositionOutput = z.infer<typeof AnalyzeMealCompositionOutputSchema>;
@@ -66,7 +67,14 @@ const analyzeMealCompositionFlow = ai.defineFlow(
       prompt: universalPromptTemplate,
     });
 
-    const { output } = await prompt(input, { model });
+    let output;
+    if (modelId === 'gpt-5.2-chat') {
+        output = await callAzureOpenAI(prompt, input, AnalyzeMealCompositionOutputSchema);
+    } else {
+        const genkitResponse = await prompt(input, { model });
+        output = genkitResponse.output;
+    }
+
     if (!output) {
       throw new Error("Meal composition analysis failed to produce an output.");
     }
