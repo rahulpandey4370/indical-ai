@@ -1,17 +1,21 @@
-
 'use server';
 
-import OpenAI from 'openai';
+import { AzureOpenAI } from 'openai';
 import { z, ZodSchema } from 'zod';
 
-const azureOpenAI = new OpenAI({
-  apiKey: process.env.AZURE_OPENAI_API_KEY,
-  baseURL: process.env.AZURE_OPENAI_ENDPOINT,
-  defaultQuery: { "api-version": "2024-02-01" },
-  defaultHeaders: { 'api-key': process.env.AZURE_OPENAI_API_KEY },
-});
+// Configuration from Environment Variables
+const endpoint = process.env.AZURE_OPENAI_ENDPOINT!;
+const apiKey = process.env.AZURE_OPENAI_API_KEY!;
+const apiVersion = "2025-04-01-preview"; 
+const deployment = process.env.AZURE_OPENAI_DEPLOYMENT_NAME!;
 
-const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME!;
+// Initialize the Azure-specific client
+const client = new AzureOpenAI({
+  endpoint,
+  apiKey,
+  apiVersion,
+  deployment,
+});
 
 // Basic Handlebars-like replacer
 function simpleTemplateRender(template: string, data: Record<string, any>): string {
@@ -21,8 +25,6 @@ function simpleTemplateRender(template: string, data: Record<string, any>): stri
     output = output.replace(/{{media\s+url=([^}]+)}}/g, (match, key) => {
         const value = data[key.trim()];
         if(typeof value === 'string' && value.startsWith('data:image')) {
-            // Azure OpenAI doesn't support inline base64 images this way,
-            // so we'll just indicate an image was present in the text prompt.
             return `[An image was provided: ${value.substring(0, 50)}...]`;
         }
         return '';
@@ -42,7 +44,7 @@ function simpleTemplateRender(template: string, data: Record<string, any>): stri
             if(current && typeof current === 'object' && k in current) {
                 current = current[k];
             } else {
-                return ''; // Key not found
+                return ''; 
             }
         }
         return String(current);
@@ -56,9 +58,8 @@ function simpleTemplateRender(template: string, data: Record<string, any>): stri
     return output;
 }
 
-
 /**
- * A helper function to call Azure OpenAI with a structured prompt and parse the JSON output.
+ * Structured Output Helper
  */
 export async function callAzureOpenAI<T extends ZodSchema>(
   promptTemplate: string,
@@ -69,8 +70,10 @@ export async function callAzureOpenAI<T extends ZodSchema>(
   const textPrompt = simpleTemplateRender(promptTemplate, input);
 
   try {
-    const response = await azureOpenAI.chat.completions.create({
-      model: deploymentName,
+    const response = await client.chat.completions.create({
+      // In the new SDK, deployment is handled in the constructor, 
+      // but 'model' is often still required for compatibility.
+      model: deployment, 
       messages: [{ role: 'user', content: textPrompt }],
       response_format: { type: 'json_object' },
     });
@@ -80,9 +83,7 @@ export async function callAzureOpenAI<T extends ZodSchema>(
       throw new Error('Azure OpenAI returned an empty response.');
     }
 
-    // Sometimes the response is wrapped in ```json ... ```, so we clean it.
     const cleanedContent = content.replace(/```json\n?|\n?```/g, '').trim();
-
     const parsed = JSON.parse(cleanedContent);
     return outputSchema.parse(parsed);
   } catch (error: any) {
@@ -95,20 +96,15 @@ export async function callAzureOpenAI<T extends ZodSchema>(
 }
 
 /**
- * A simpler helper for chat-style interactions that don't require structured output.
+ * Chat Style Helper
  */
 export async function callAzureOpenAIChat(
-  messages: Array<{ role: 'system' | 'user' | 'model'; content: string }>
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>
 ): Promise<string> {
-    // Map 'model' role to 'assistant' for OpenAI API
-    const chatMessages = messages.map(m => {
-        const role = m.role === 'model' ? 'assistant' : m.role;
-        return { role, content: m.content };
-    })
   try {
-    const response = await azureOpenAI.chat.completions.create({
-      model: deploymentName,
-      messages: chatMessages,
+    const response = await client.chat.completions.create({
+      model: deployment,
+      messages: messages,
     });
     return response.choices[0]?.message?.content || '';
   } catch (error: any) {
