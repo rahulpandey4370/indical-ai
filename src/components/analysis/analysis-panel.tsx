@@ -14,6 +14,7 @@ import type {
   MealType,
   RefinedNutritionalAnalysis,
   ModelId,
+  AnalysisItem,
 } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -170,6 +171,33 @@ export function AnalysisPanel({
     });
   };
 
+  const handleRemoveItem = (itemIndex: number) => {
+    if (!analysisResult) return;
+
+    const newItems = [...analysisResult.items];
+    const removedItem = newItems.splice(itemIndex, 1)[0];
+    
+    // Recalculate totals
+    const newTotalCalories = analysisResult.total_calories - removedItem.calories;
+    const newTotalMacros = {
+      protein: analysisResult.total_macros.protein - removedItem.macros.protein,
+      carbs: analysisResult.total_macros.carbs - removedItem.macros.carbs,
+      fat: analysisResult.total_macros.fat - removedItem.macros.fat,
+    };
+
+    setAnalysisResult({
+      ...analysisResult,
+      items: newItems,
+      total_calories: newTotalCalories,
+      total_macros: newTotalMacros,
+    });
+
+    toast({
+      title: 'Item Removed',
+      description: `"${removedItem.name}" has been removed from the analysis.`,
+    });
+  };
+
   const renderContent = () => {
     if (isAnalyzing) {
       return (
@@ -201,7 +229,7 @@ export function AnalysisPanel({
               <div className="flex flex-col items-center justify-center bg-card p-4 rounded-2xl shadow-sm border space-y-4">
                 <NutritionalChart analysis={analysisResult} />
                  <div className="text-center">
-                    <p className="text-4xl font-extrabold tracking-tighter text-foreground">{analysisResult.total_calories}</p>
+                    <p className="text-4xl font-extrabold tracking-tighter text-foreground">{analysisResult.total_calories.toFixed(0)}</p>
                     <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Total Kcal</p>
                 </div>
                 <div className="flex gap-4 text-xs font-semibold text-muted-foreground">
@@ -248,17 +276,25 @@ export function AnalysisPanel({
                 </h3>
                 <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
                   {analysisResult.items.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded-lg">
-                      <div>
-                        <p className="font-bold">{item.name}</p>
+                    <div key={index} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded-lg group">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold truncate">{item.name}</p>
                         <p className="text-xs text-muted-foreground">{item.weight}{item.unit} Serving</p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right px-2">
                         <p className="font-bold">{item.calories}Kcal</p>
                         <p className="text-xs text-muted-foreground">
                             P: {item.macros.protein.toFixed(0)}g C: {item.macros.carbs.toFixed(0)}g F: {item.macros.fat.toFixed(0)}g
                         </p>
                       </div>
+                       <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => handleRemoveItem(index)}
+                        >
+                          <X size={14} />
+                        </Button>
                     </div>
                   ))}
                 </div>
@@ -342,5 +378,3 @@ export function AnalysisPanel({
     </div>
   );
 }
-
-    
