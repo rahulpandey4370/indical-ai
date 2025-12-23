@@ -66,7 +66,7 @@ export function AnalysisPanel({
     if (!existingEntry.id && !analysisResult) {
       handleInitialAnalysis();
     } else if (existingEntry.id) {
-       setChatMessages([{ role: 'model', text: "Ready to update this entry. What changed?" }]);
+       setChatMessages([{ role: 'model', text: `Ready to update this entry. What changed?`, modelId: analysisResult?.modelId as ModelId }]);
     }
   }, []);
 
@@ -94,7 +94,7 @@ export function AnalysisPanel({
       } else if (!mealName) {
         setMealName(result.summary);
       }
-      setChatMessages([{ role: 'model', text: `I've analyzed your ${existingEntry.mode}. Everything looks high quality! I found ${result.items.length} items.` }]);
+      setChatMessages([{ role: 'model', text: `I've analyzed your ${existingEntry.mode}. Everything looks high quality! I found ${result.items.length} items.`, modelId: result.modelId as ModelId }]);
     } catch (e: any) {
       const errorMessage = e.message || 'An unknown error occurred during analysis.';
       setAnalysisError(errorMessage);
@@ -128,7 +128,7 @@ export function AnalysisPanel({
       }
 
       setAnalysisResult(updatedAnalysis);
-      setChatMessages(prev => [...prev, { role: 'model', text: response.responseText }]);
+      setChatMessages(prev => [...prev, { role: 'model', text: response.responseText, modelId: response.modelId as ModelId }]);
     } catch (e: any) {
       const errorMessage = e.message || 'An unknown error occurred during refinement.';
       setAnalysisError(errorMessage);
@@ -339,6 +339,9 @@ export function AnalysisPanel({
                       {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><Bot className="text-primary" size={16}/></div>}
                     <div className={`p-3 rounded-2xl max-w-[80%] ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-card border shadow-sm rounded-bl-none'}`}>
                         {msg.text}
+                        {msg.modelId && (
+                            <Badge variant="outline" className="mt-2 font-mono text-xs">{msg.modelId}</Badge>
+                        )}
                     </div>
                 </div>
             ))}

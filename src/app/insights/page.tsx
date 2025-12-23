@@ -16,6 +16,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Responsive
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useModel } from '@/hooks/use-model';
+import { Badge } from '@/components/ui/badge';
 
 type TimeRange = '7' | '30' | '90';
 
@@ -188,8 +189,9 @@ export default function InsightsPage() {
                          <BrainCircuit size={28} className="text-primary"/>
                          AI-Powered Analysis
                     </CardTitle>
-                    <CardDescription className="mt-1">
-                        {showPlanner ? "Calculate your custom calorie and macro plans." : "Let AI analyze your trends and provide personalized feedback."}
+                    <CardDescription className="mt-1 flex justify-between items-center">
+                        <span>{showPlanner ? "Calculate your custom calorie and macro plans." : "Let AI analyze your trends and provide personalized feedback."}</span>
+                        {insights?.modelId && <Badge variant="outline" className="font-mono text-xs">{insights.modelId}</Badge>}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 pt-0">

@@ -19,9 +19,10 @@ import { Send } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
 import { getAssistantResponse } from '@/ai/flows/get-assistant-response';
 import { getHistory, getGoals } from '@/lib/actions';
-import { HistoryEntry, UserGoals, ChatMessage } from '@/lib/types';
+import { HistoryEntry, UserGoals, ChatMessage, ModelId } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useModel } from '@/hooks/use-model';
+import { Badge } from '../ui/badge';
 
 const NavLink = ({ href, children, icon: Icon }: { href: string, children: React.ReactNode, icon: React.ElementType }) => {
     const pathname = usePathname();
@@ -42,7 +43,7 @@ export function Nav() {
   const [darkMode, setDarkMode] = useState(false);
   const { user } = useUser();
   const { toast } = useToast();
-  const { selectedModel } = useModel();
+  const { selectedModel, incrementModelUsage } = useModel();
 
   // Assistant State
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -94,6 +95,7 @@ export function Nav() {
     setAssistantChat(currentChat);
     setAssistantInput("");
     setProcessingAssistant(true);
+    incrementModelUsage(selectedModel);
 
     try {
       // Pass only today's history to the assistant
@@ -107,9 +109,9 @@ export function Nav() {
         chatHistory: currentChat.slice(0, -1),
         currentDate: new Date().toDateString()
       }, selectedModel);
-      setAssistantChat(prev => [...prev, { role: 'model', text: response }]);
+      setAssistantChat(prev => [...prev, { role: 'model', text: response, modelId: selectedModel }]);
     } catch(e: any) {
-        setAssistantChat(prev => [...prev, { role: 'model', text: "Sorry, I'm having trouble connecting right now." }]);
+        setAssistantChat(prev => [...prev, { role: 'model', text: "Sorry, I'm having trouble connecting right now.", modelId: selectedModel }]);
         toast({ variant: 'destructive', title: "Assistant Error", description: e.message });
     } finally {
         setProcessingAssistant(false);
@@ -167,9 +169,13 @@ export function Nav() {
             </SheetHeader>
              <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {assistantChat.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div key={i} className={`flex items-end gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {m.role === 'model' && <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0"><Bot className="text-primary" size={16}/></div>}
                     <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm text-sm font-medium leading-relaxed ${m.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-muted text-muted-foreground rounded-bl-none'}`}>
                       {m.text}
+                      {m.modelId && (
+                        <Badge variant="outline" className="mt-2 font-mono text-xs">{m.modelId}</Badge>
+                      )}
                     </div>
                   </div>
                 ))}

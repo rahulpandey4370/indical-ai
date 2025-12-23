@@ -144,7 +144,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
   goals
 }) => {
   const { toast } = useToast();
-  const { selectedModel } = useModel();
+  const { selectedModel, incrementModelUsage } = useModel();
   const [analysisResult, setAnalysisResult] = useState<AnalyzeMealCompositionOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -160,6 +160,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
     setIsModalOpen(true);
     setCurrentMealType(mealType);
     setAnalysisResult(null);
+    incrementModelUsage(selectedModel);
     try {
       const summarizedEntries = entries.map(entry => ({
         mealName: entry.mealName || entry.analysis.summary,

@@ -56,6 +56,7 @@ export type HistoryEntry = {
 export type ChatMessage = {
   role: 'user' | 'model';
   text: string;
+  modelId?: ModelId;
 };
 
 export type UserGoals = {
@@ -86,6 +87,7 @@ export const GenerateInsightsOutputSchema = z.object({
   macroDistributionAnalysis: z.string(),
   bmrAndMaintenance: BMRSchema.optional(),
   suggestedPlans: z.array(PlanSchema).optional(),
+  modelId: z.string().optional(),
 });
 
 export const GenerateInsightsInputSchema = z.object({

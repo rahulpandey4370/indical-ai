@@ -7,7 +7,7 @@
 import { ai } from '@/ai/index';
 import { z } from 'genkit';
 import { ModelId } from '@/lib/types';
-import { AnalysisItemSchema } from '@/lib/schemas';
+import { AnalysisItemSchema, GenerateInsightsOutputSchema as InsightsOutputSchema } from '@/lib/schemas';
 import { callAzureOpenAI } from '@/lib/azure-openai';
 
 const BMRSchema = z.object({
@@ -54,13 +54,7 @@ const GenerateInsightsInputSchema = z.object({
 
 });
 
-const GenerateInsightsOutputSchema = z.object({
-  keyObservations: z.array(z.string()).describe("A list of 2-3 key, actionable observations from the user's eating habits."),
-  calorieTrendAnalysis: z.string().describe("A brief analysis of the user's calorie intake trend over the period."),
-  macroDistributionAnalysis: z.string().describe("A brief analysis of the user's average macronutrient distribution."),
-  bmrAndMaintenance: BMRSchema.optional().describe("BMR and maintenance calorie calculations, if requested."),
-  suggestedPlans: z.array(PlanSchema).optional().describe("A few suggested calorie/macro plans for different goals (e.g., deficit, surplus)."),
-});
+const GenerateInsightsOutputSchema = InsightsOutputSchema;
 
 export type GenerateInsightsInput = z.infer<typeof GenerateInsightsInputSchema>;
 export type GenerateInsightsOutput = z.infer<typeof GenerateInsightsOutputSchema>;
@@ -69,7 +63,8 @@ export async function generateInsights(
   input: GenerateInsightsInput,
   modelId: ModelId
 ): Promise<GenerateInsightsOutput> {
-  return generateInsightsFlow(input, { context: { modelId } });
+  const result = await generateInsightsFlow(input, { context: { modelId } });
+  return { ...result, modelId };
 }
 
 
