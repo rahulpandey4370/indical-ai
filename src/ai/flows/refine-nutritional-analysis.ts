@@ -102,6 +102,7 @@ Your response must be a valid JSON object that strictly follows this format:
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
 const gemmaPromptTemplate = `${geminiPromptTemplate}
+The 'refinedAnalysis' field MUST be a nested JSON object containing the full, updated analysis.
 You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
 
 
@@ -127,7 +128,7 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
         });
         let rawJson = llmResponse.text;
         if (rawJson.startsWith('```json')) {
-          rawJson = rawJson.substring(7, rawJson.length - 3);
+          rawJson = rawJson.substring(7, rawJson.length - 3).trim();
         }
         const parsed = JSON.parse(rawJson);
         return RefineNutritionalAnalysisOutputSchema.parse(parsed);

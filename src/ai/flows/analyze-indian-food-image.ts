@@ -131,6 +131,8 @@ You must ALWAYS return a valid JSON object that strictly follows the provided ou
 >>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
 const gemmaPromptTemplate = `${geminiPromptTemplate}
+The 'macros' for each item must be a nested JSON object like this: "macros": { "protein": 10, "carbs": 20, "fat": 5 }.
+The 'total_macros' must also be a nested JSON object.
 You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
 
 const analyzeIndianFoodImageFlow = ai.defineFlow(
@@ -176,9 +178,8 @@ const analyzeIndianFoodImageFlow = ai.defineFlow(
       const rawJson = llmResponse.text;
 =======
       let rawJson = llmResponse.text;
-      // Clean the response from markdown fences
       if (rawJson.startsWith('```json')) {
-        rawJson = rawJson.substring(7, rawJson.length - 3);
+        rawJson = rawJson.substring(7, rawJson.length - 3).trim();
       }
 >>>>>>> d4027d7 (Now got this)
       const parsed = JSON.parse(rawJson);

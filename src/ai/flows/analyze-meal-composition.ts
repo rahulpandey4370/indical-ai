@@ -91,6 +91,7 @@ Analysis Steps:
 const analyzeMealCompositionFlow = ai.defineFlow({
 =======
 const gemmaPromptTemplate = `${geminiPromptTemplate}
+The 'detailedNutrients' must be an array of nested JSON objects, each with a name, value, and unit field. Example: {"name": "Protein", "value": 25, "unit": "g"}.
 You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
 
 
@@ -119,7 +120,7 @@ const analyzeMealCompositionFlow = ai.defineFlow(
         });
         let rawJson = llmResponse.text;
         if (rawJson.startsWith('```json')) {
-          rawJson = rawJson.substring(7, rawJson.length - 3);
+          rawJson = rawJson.substring(7, rawJson.length - 3).trim();
         }
         const parsed = JSON.parse(rawJson);
         return AnalyzeMealCompositionOutputSchema.parse(parsed);

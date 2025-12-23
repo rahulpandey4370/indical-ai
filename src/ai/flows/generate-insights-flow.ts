@@ -181,6 +181,7 @@ Based on all the provided data, generate the final JSON output.
 const generateInsightsFlow = ai.defineFlow({
 =======
 const gemmaPromptTemplate = `${geminiPromptTemplate}
+If 'calculationRequest' is provided, you MUST return 'bmrAndMaintenance' and 'suggestedPlans' as nested JSON objects within the main object.
 You MUST only output a single, raw JSON object and NOTHING else. Do not wrap it in markdown backticks or any other text.`;
 
 
@@ -209,7 +210,7 @@ const generateInsightsFlow = ai.defineFlow(
         });
         let rawJson = llmResponse.text;
         if (rawJson.startsWith('```json')) {
-          rawJson = rawJson.substring(7, rawJson.length - 3);
+          rawJson = rawJson.substring(7, rawJson.length - 3).trim();
         }
         const parsed = JSON.parse(rawJson);
         return GenerateInsightsOutputSchema.parse(parsed);
