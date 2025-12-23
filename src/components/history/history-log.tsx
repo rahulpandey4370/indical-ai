@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseNutritionString } from '@/lib/utils';
 import { analyzeMealComposition } from '@/ai/flows/analyze-meal-composition';
 import { useToast } from '@/hooks/use-toast';
-import { useModel } from '@/hooks/use-model';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -145,11 +144,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
   goals
 }) => {
   const { toast } = useToast();
-<<<<<<< HEAD
-  const { model, incrementModelUsage } = useModel();
-=======
   const { selectedModel } = useModel();
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
   const [analysisResult, setAnalysisResult] = useState<AnalyzeMealCompositionOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -165,7 +160,6 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
     setIsModalOpen(true);
     setCurrentMealType(mealType);
     setAnalysisResult(null);
-    incrementModelUsage(model);
     try {
       const summarizedEntries = entries.map(entry => ({
         mealName: entry.mealName || entry.analysis.summary,
@@ -178,11 +172,7 @@ const HistoryLog: React.FC<HistoryLogProps> = ({
         mealType,
         mealEntries: summarizedEntries,
         userGoals: goals,
-<<<<<<< HEAD
-      }, model);
-=======
       }, selectedModel);
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
       setAnalysisResult(result);
     } catch (e: any) {
       toast({ title: 'Analysis Failed', description: e.message, variant: 'destructive' });

@@ -9,7 +9,6 @@
  * RefineNutritionalAnalysisOutput - The return type for the refineNutritionalAnalysis function.
  */
 
-import { configureAi } from '@/ai/genkit';
 import { ai } from '@/ai/index';
 import {z} from 'genkit';
 import { AnalyzeIndianFoodImageOutputSchema as NutritionalAnalysisSchema } from '@/lib/schemas';
@@ -34,43 +33,6 @@ export type RefineNutritionalAnalysisOutput = z.infer<
 
 export async function refineNutritionalAnalysis(
   input: RefineNutritionalAnalysisInput,
-<<<<<<< HEAD
-  modelId: string,
-): Promise<RefineNutritionalAnalysisOutput> {
-  await configureAi(modelId);
-  return refineNutritionalAnalysisFlow(input);
-}
-
-const refineNutritionalAnalysisPrompt = ai.definePrompt({
-    name: 'refineNutritionalAnalysisPrompt',
-    input: {schema: RefineNutritionalAnalysisInputSchema},
-    output: {schema: RefineNutritionalAnalysisOutputSchema},
-    prompt: `
-      You are a nutritional assistant. Your task is to refine a nutrition breakdown based on the user's feedback.
-
-      Here is the current analysis:
-      {{{json initialAnalysis}}}
-
-      Here are the user's instructions for refinement:
-      "{{{refinementInstruction}}}"
-
-      Based on these instructions, you MUST update the JSON data. For example, if the user says "the portion of rice was smaller", you should reduce the weight_g, calories, and macros for the rice item and update the totals. If they say "that wasn't paneer, it was tofu", you must replace the paneer item with a tofu item, recalculating everything accordingly.
-
-      Your response must be a valid JSON object that strictly follows this format:
-      {
-        "refinedAnalysis": { // The entire updated nutritional analysis object, with all totals recalculated.
-          "items": [...],
-          "total_calories": ...,
-          "total_macros": { ... },
-          "confidence_score": ...,
-          "food_type": "...",
-          "summary": "..."
-        },
-        "responseText": "A short, friendly message to the user confirming the changes you made. For example: 'I've adjusted the portion size for you!'"
-      }
-    `,
-  });
-=======
   modelId: ModelId
 ): Promise<RefineNutritionalAnalysisOutput> {
   const result = await refineNutritionalAnalysisFlow(input, { context: { modelId } });
@@ -101,7 +63,6 @@ Your response must be a valid JSON object that strictly follows this format:
   "responseText": "A short, friendly message to the user confirming the changes you made. For example: 'I've adjusted the portion size for you!'"
 }
 `;
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
 
 const gemmaPromptTemplate = `You are a nutritional assistant. Your task is to refine a nutrition breakdown based on the user's feedback and return a single, raw JSON object. Do not add any other text.
 
@@ -143,10 +104,6 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
       responseText: z.string(),
     }),
   },
-<<<<<<< HEAD
-  async (input) => {
-    const {output} = await refineNutritionalAnalysisPrompt(input);
-=======
   async (input, { context }) => {
     const modelId = context?.modelId || 'gemini-2.5-flash';
     const model = `googleai/${modelId}`;
@@ -173,12 +130,6 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
             throw new Error(`Gemma returned invalid JSON. Raw output: ${rawJson}`);
         }
 
-<<<<<<< HEAD
-    const {output} = await prompt(input);
->>>>>>> 052caa3 (Can you please at a 3 dot button to the right most side of the dock whic)
-    if (!output) {
-      throw new Error("Refinement failed to produce an output.");
-=======
     } else { // Is a Gemini model
         const prompt = ai.definePrompt({
             name: 'refineNutritionalAnalysisPrompt',
@@ -195,7 +146,6 @@ const refineNutritionalAnalysisFlow = ai.defineFlow(
           throw new Error("Refinement failed to produce an output.");
         }
         return output;
->>>>>>> a37319f (Failed to fetch from https://generativelanguage.googleapis.com/v1beta/mo)
     }
   }
 );
