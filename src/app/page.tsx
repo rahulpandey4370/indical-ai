@@ -123,18 +123,18 @@ export default function Home() {
         if (!uploadResult.success || !uploadResult.url) {
           throw new Error(uploadResult.error || 'Failed to upload image');
         }
-
-        startAnalysis(uploadResult.url, mode);
-        setLoading(false);
+        
         toast({ title: 'Upload complete!', description: 'Starting analysis...' });
-
+        startAnalysis(uploadResult.url, mode);
+        
       } catch (e: any) {
-        setLoading(false);
         toast({ 
           variant: 'destructive', 
           title: 'Upload failed', 
           description: e.message || 'Could not process the selected image.' 
         });
+      } finally {
+        setLoading(false);
       }
     }
     if(event.target) event.target.value = '';
