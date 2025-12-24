@@ -5,7 +5,7 @@ import { useState, useTransition, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { analyzeIndianFoodImage } from '@/ai/flows/analyze-indian-food-image';
 import { refineNutritionalAnalysis } from '@/ai/flows/refine-nutritional-analysis';
-import { Send, Save, Loader2, CheckCircle, Bot, AlertTriangle, Calendar as CalendarIcon, X } from 'lucide-react';
+import { Send, Save, Loader2, CheckCircle, Bot, AlertTriangle, Calendar as CalendarIcon, X, MoreVertical } from 'lucide-react';
 import { commitToJourney } from '@/lib/actions';
 import type {
   NutritionalAnalysis,
@@ -29,6 +29,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { useModel } from '@/hooks/use-model';
 import { Badge } from '../ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { modelNames } from '@/lib/types';
 
 export function AnalysisPanel({
   closePanel,
@@ -38,7 +40,7 @@ export function AnalysisPanel({
   existingEntry: HistoryEntry;
 }) {
   const { user } = useUser();
-  const { selectedModel, incrementModelUsage } = useModel();
+  const { selectedModel, setSelectedModel, incrementModelUsage } = useModel();
   const [imagePreview, setImagePreview] = useState<string | null>(
     existingEntry?.imageUrl || null
   );
@@ -352,6 +354,22 @@ export function AnalysisPanel({
       
       <div className="sticky bottom-0 p-4 border-t bg-background/80 backdrop-blur-sm">
         <div className="relative max-w-4xl mx-auto flex items-center gap-2">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-12 w-12 shrink-0">
+                        <Bot />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="mb-2 w-56" side="top" align="start">
+                    <DropdownMenuLabel className="flex items-center gap-2"><Bot size={14}/> AI Model</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuRadioGroup value={selectedModel} onValueChange={(val) => setSelectedModel(val as ModelId)}>
+                        {modelNames.map(model => (
+                            <DropdownMenuRadioItem key={model} value={model}>{model}</DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
           <Input
             type="text"
             value={refinementInput}
