@@ -154,10 +154,11 @@ export default function Home() {
         
       } catch (e: any) {
         console.error("Upload error:", e);
+        const errorMessage = e.message || (typeof e === 'object' && e !== null ? JSON.stringify(e) : 'Could not process the selected image.');
         toast({ 
           variant: 'destructive', 
           title: 'Upload failed', 
-          description: e.message || 'Could not process the selected image.' 
+          description: errorMessage,
         });
       } finally {
         setLoading(false);
