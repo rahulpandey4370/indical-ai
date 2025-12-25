@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -153,8 +154,8 @@ export default function Home() {
         startAnalysis(uploadResult.url, mode);
         
       } catch (e: any) {
-        console.error("Upload error:", e);
         const errorMessage = e.message || (typeof e === 'object' && e !== null ? JSON.stringify(e) : 'Could not process the selected image.');
+        console.error("Upload error:", errorMessage);
         toast({ 
           variant: 'destructive', 
           title: 'Upload failed', 
@@ -336,3 +337,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
