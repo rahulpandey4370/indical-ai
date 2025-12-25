@@ -88,7 +88,7 @@ export async function callAzureOpenAI<T extends ZodSchema>(
       model: deployment, 
       messages: messages,
       response_format: { type: 'json_object' },
-      max_tokens: 4096, // Increased max tokens for potentially larger JSON outputs
+      max_completion_tokens: 4096, // Use max_completion_tokens for this model
     });
 
     const content = response.choices[0]?.message?.content;
