@@ -1,12 +1,14 @@
+
 'use server';
 
-import { AzureOpenAI } from 'openai';
+import { AzureOpenAI, AzureOpenAIClient } from 'openai';
 import { z, ZodSchema } from 'zod';
+import { ChatCompletionMessageParam } from 'openai/resources/chat';
 
 // Configuration from Environment Variables
 const endpoint = process.env.AZURE_OPENAI_ENDPOINT!;
 const apiKey = process.env.AZURE_OPENAI_API_KEY!;
-const apiVersion = "2025-04-01-preview"; 
+const apiVersion = "2024-02-01"; 
 const deployment = process.env.AZURE_OPENAI_DEPLOYMENT_NAME!;
 
 // Initialize the Azure-specific client
@@ -14,21 +16,14 @@ const client = new AzureOpenAI({
   endpoint,
   apiKey,
   apiVersion,
-  deployment,
 });
 
 // Basic Handlebars-like replacer
 function simpleTemplateRender(template: string, data: Record<string, any>): string {
     let output = template;
 
-    // Replace {{media url=...}}
-    output = output.replace(/{{media\s+url=([^}]+)}}/g, (match, key) => {
-        const value = data[key.trim()];
-        if(typeof value === 'string' && value.startsWith('data:image')) {
-            return `[An image was provided: ${value.substring(0, 50)}...]`;
-        }
-        return '';
-    });
+    // This will now just remove the media tag, as the URL is handled separately.
+    output = output.replace(/{{media\s+url=([^}]+)}}/g, '');
 
     // Replace {{{json ...}}}
     output = output.replace(/{{{json\s+([^}]+)}}}/g, (match, key) => {
@@ -55,11 +50,11 @@ function simpleTemplateRender(template: string, data: Record<string, any>): stri
         return data[key.trim()] ? content : '';
     });
 
-    return output;
+    return output.trim();
 }
 
 /**
- * Structured Output Helper
+ * Structured Output Helper for Vision Models
  */
 export async function callAzureOpenAI<T extends ZodSchema>(
   promptTemplate: string,
@@ -68,14 +63,32 @@ export async function callAzureOpenAI<T extends ZodSchema>(
 ): Promise<z.infer<T>> {
   
   const textPrompt = simpleTemplateRender(promptTemplate, input);
+  
+  const messages: ChatCompletionMessageParam[] = [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: textPrompt },
+      ],
+    },
+  ];
+
+  // If there's an image URI, add it to the message content
+  if (input.photoDataUri && typeof messages[0].content === 'object') {
+     (messages[0].content as any[]).push({
+      type: 'image_url',
+      image_url: {
+        url: input.photoDataUri,
+      },
+    });
+  }
 
   try {
     const response = await client.chat.completions.create({
-      // In the new SDK, deployment is handled in the constructor, 
-      // but 'model' is often still required for compatibility.
       model: deployment, 
-      messages: [{ role: 'user', content: textPrompt }],
+      messages: messages,
       response_format: { type: 'json_object' },
+      max_tokens: 4096, // Increased max tokens for potentially larger JSON outputs
     });
 
     const content = response.choices[0]?.message?.content;
