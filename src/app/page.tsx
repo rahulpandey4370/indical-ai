@@ -100,20 +100,41 @@ export default function Home() {
           throw new Error('You must be logged in to upload images.');
         }
 
-        // Handle HEIC/HEIF conversion
-        if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
+        // Check for HEIC/HEIF extensions
+        const isHeic = file.name.toLowerCase().endsWith('.heic') || 
+                       file.name.toLowerCase().endsWith('.heif') ||
+                       file.type === 'image/heic' || 
+                       file.type === 'image/heif';
+
+        if (isHeic) {
           toast({ title: 'Converting HEIC image...', description: 'This may take a moment.' });
           
           const heic2any = (await import('heic2any')).default;
-          const convertedBlob = await heic2any({
-            blob: file,
+          
+          // 1. Explicitly create a Blob with the correct type to help the library
+          // This fixes "format not supported" if the browser guessed the wrong MIME type
+          const blob = new Blob([file], { type: 'image/heic' });
+
+          const conversionResult = await heic2any({
+            blob: blob,
             toType: 'image/jpeg',
             quality: 0.8,
           });
-          const convertedFile = new File([convertedBlob as Blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-            type: 'image/jpeg',
-            lastModified: new Date().getTime(),
-          });
+
+          // 2. Handle the case where heic2any returns an array (e.g., Live Photos)
+          const convertedBlob = Array.isArray(conversionResult) 
+            ? conversionResult[0] 
+            : conversionResult;
+
+          const convertedFile = new File(
+            [convertedBlob as Blob], 
+            file.name.replace(/\.(heic|heif)$/i, ".jpg"), 
+            {
+              type: 'image/jpeg',
+              lastModified: new Date().getTime(),
+            }
+          );
+          
           file = convertedFile;
           toast({ title: 'Conversion complete!', description: 'Starting upload...' });
         }
@@ -132,6 +153,7 @@ export default function Home() {
         startAnalysis(uploadResult.url, mode);
         
       } catch (e: any) {
+        console.error("Upload error:", e);
         toast({ 
           variant: 'destructive', 
           title: 'Upload failed', 
@@ -139,9 +161,10 @@ export default function Home() {
         });
       } finally {
         setLoading(false);
+        // Reset input value so the same file can be selected again if needed
+        if(event.target) event.target.value = '';
       }
     }
-    if(event.target) event.target.value = '';
   };
 
 
