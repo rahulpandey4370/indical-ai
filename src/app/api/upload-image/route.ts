@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { v4 as uuidv4 } from 'uuid';
+import sharp from 'sharp';
 
 const blobConnectionString = process.env.AZURE_STORAGE_CONNECTION_STRING!;
 const blobContainerName = process.env.AZURE_STORAGE_CONTAINER_NAME!;
@@ -21,7 +22,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (8MB)
     const maxSize = 8 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
@@ -30,15 +30,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    const arrayBuffer = await file.arrayBuffer();
+    let buffer = Buffer.from(arrayBuffer);
+    let contentType = file.type;
+    let fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+
+    // Handle HEIC/HEIF conversion on the server
+    if (fileExtension === 'heic' || fileExtension === 'heif' || 
+        contentType === 'image/heic' || contentType === 'image/heif') {
+      try {
+        buffer = await sharp(buffer)
+          .jpeg({ quality: 90 })
+          .toBuffer();
+        
+        contentType = 'image/jpeg';
+        fileExtension = 'jpg';
+      } catch (conversionError) {
+        console.error('HEIC conversion failed:', conversionError);
+        return NextResponse.json(
+          { success: false, message: 'Failed to convert HEIC image' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (!contentType.startsWith('image/')) {
       return NextResponse.json(
         { success: false, message: 'File must be an image' },
         { status: 400 }
       );
     }
 
-    // Initialize Azure client
     const blobServiceClient = BlobServiceClient.fromConnectionString(
       blobConnectionString
     );
@@ -46,18 +68,12 @@ export async function POST(request: NextRequest) {
       blobContainerName
     );
 
-    // Generate unique blob name
-    const fileExtension = file.name.split('.').pop() || 'jpg';
     const blobName = `${userId}/${uuidv4()}.${fileExtension}`;
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
-    // Upload
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
     await blockBlobClient.upload(buffer, buffer.length, {
       blobHTTPHeaders: { 
-        blobContentType: file.type 
+        blobContentType: contentType 
       },
     });
 

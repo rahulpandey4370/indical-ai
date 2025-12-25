@@ -80,7 +80,7 @@ export default function Home() {
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, mode: 'meal' | 'barcode') => {
     if (event.target.files?.[0]) {
-      let file = event.target.files[0];
+      const file = event.target.files[0];
       
       const maxSize = 8 * 1024 * 1024;
       if (file.size > maxSize) {
@@ -89,81 +89,38 @@ export default function Home() {
           title: 'File too large', 
           description: 'Please select an image smaller than 8MB.' 
         });
-        event.target.value = '';
+        if(event.target) event.target.value = '';
         return;
       }
 
       setLoading(true);
-      toast({ title: 'Processing image...', description: 'Please wait...' });
+      toast({ title: 'Uploading image...', description: 'Please wait...' });
 
       try {
         if (!user) {
           throw new Error('You must be logged in to upload images.');
         }
 
-        // Check for HEIC/HEIF extensions
-        const isHeic = file.name.toLowerCase().endsWith('.heic') || 
-                       file.name.toLowerCase().endsWith('.heif') ||
-                       file.type === 'image/heic' || 
-                       file.type === 'image/heif';
-
-        if (isHeic) {
-          toast({ title: 'Converting HEIC image...', description: 'This may take a moment.' });
-          
-          const heic2any = (await import('heic2any')).default;
-          
-          // 1. Explicitly create a Blob with the correct type to help the library
-          // This fixes "format not supported" if the browser guessed the wrong MIME type
-          const blob = new Blob([file], { type: 'image/heic' });
-
-          const conversionResult = await heic2any({
-            blob: blob,
-            toType: 'image/jpeg',
-            quality: 0.8,
-          });
-
-          // 2. Handle the case where heic2any returns an array (e.g., Live Photos)
-          const convertedBlob = Array.isArray(conversionResult) 
-            ? conversionResult[0] 
-            : conversionResult;
-
-          const convertedFile = new File(
-            [convertedBlob as Blob], 
-            file.name.replace(/\.(heic|heif)$/i, ".jpg"), 
-            {
-              type: 'image/jpeg',
-              lastModified: new Date().getTime(),
-            }
-          );
-          
-          file = convertedFile;
-          toast({ title: 'Conversion complete!', description: 'Starting upload...' });
-        }
-        
-        toast({ title: 'Uploading image...', description: 'Please wait...' });
         const uploadResult = await uploadImageToBlob(file, user.id);
         
         if (!uploadResult.success || !uploadResult.url) {
           throw new Error(uploadResult.error || 'Failed to upload image');
         }
 
-        // Add a small delay to ensure the image is available
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         toast({ title: 'Upload complete!', description: 'Starting analysis...' });
         startAnalysis(uploadResult.url, mode);
         
       } catch (e: any) {
-        const errorMessage = e.message || (typeof e === 'object' && e !== null ? JSON.stringify(e) : 'Could not process the selected image.');
-        console.error("Upload error:", errorMessage);
+        console.error("Upload error:", e);
         toast({ 
           variant: 'destructive', 
           title: 'Upload failed', 
-          description: errorMessage,
+          description: e.message || 'Could not process the image.',
         });
       } finally {
         setLoading(false);
-        // Reset input value so the same file can be selected again if needed
         if(event.target) event.target.value = '';
       }
     }
