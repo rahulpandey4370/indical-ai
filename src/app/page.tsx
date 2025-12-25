@@ -92,32 +92,33 @@ export default function Home() {
         if(event.target) event.target.value = '';
         return;
       }
-
+  
       setLoading(true);
       toast({ title: 'Uploading image...', description: 'Please wait...' });
-
+  
       try {
         if (!user) {
           throw new Error('You must be logged in to upload images.');
         }
-
+  
         const uploadResult = await uploadImageToBlob(file, user.id);
         
         if (!uploadResult.success || !uploadResult.url) {
           throw new Error(uploadResult.error || 'Failed to upload image');
         }
-
+  
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         toast({ title: 'Upload complete!', description: 'Starting analysis...' });
         startAnalysis(uploadResult.url, mode);
         
       } catch (e: any) {
+        const errorMessage = e.message || 'Could not process the image.';
         console.error("Upload error:", e);
         toast({ 
           variant: 'destructive', 
           title: 'Upload failed', 
-          description: e.message || 'Could not process the image.',
+          description: errorMessage,
         });
       } finally {
         setLoading(false);
