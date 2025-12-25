@@ -123,6 +123,9 @@ export default function Home() {
         if (!uploadResult.success || !uploadResult.url) {
           throw new Error(uploadResult.error || 'Failed to upload image');
         }
+
+        // Add a small delay to ensure the image is available
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         toast({ title: 'Upload complete!', description: 'Starting analysis...' });
         startAnalysis(uploadResult.url, mode);
