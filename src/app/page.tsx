@@ -100,7 +100,7 @@ export default function Home() {
           throw new Error('You must be logged in to upload images.');
         }
 
-        // Handle HEIC conversion
+        // Handle HEIC/HEIF conversion
         if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
           toast({ title: 'Converting HEIC image...', description: 'This may take a moment.' });
           
